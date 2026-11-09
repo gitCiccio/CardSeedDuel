@@ -1,0 +1,5 @@
+OBIETTIVO
+Codice sorgente
+
+USO NEL PROGETTO
+Contenere il package Python card_suit_duel. Separare il codice riutilizzabile dai notebook e dagli script operativi. Versionare in Git tutto il codice sorgente.

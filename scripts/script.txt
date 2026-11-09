@@ -1,0 +1,5 @@
+OBIETTIVO
+Operazioni eseguibili di supporto
+
+USO NEL PROGETTO
+Inserire script per download del dataset, preparazione dati e lancio degli esperimenti. Riutilizzare le funzioni di src anziche duplicarle. La pipeline di download non e ancora implementata. Committare gli script.

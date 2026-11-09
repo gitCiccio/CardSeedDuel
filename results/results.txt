@@ -1,0 +1,5 @@
+OBIETTIVO
+Risultati degli esperimenti
+
+USO NEL PROGETTO
+Organizzare metriche, tempi, curve, confusion matrix e checkpoint per modello, frazione e seed. Committare riepiloghi piccoli e grafici finali selezionati. Checkpoint, log voluminosi e cartella runs sono esclusi da Git.

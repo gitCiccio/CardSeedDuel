@@ -1,0 +1,5 @@
+OBIETTIVO
+Dataset originale Kaggle
+
+USO NEL PROGETTO
+Conservare train, valid, test e cards.csv senza alterarli. I percorsi del CSV sono relativi a questa cartella. Per gli esperimenti selezionare hearts, clubs e spades, escludendo diamonds e joker. Non committare il dataset. Anomalia originale: cards.csv contiene train/ace of clubs/output, file assente; il futuro loader dovra gestirla esplicitamente.

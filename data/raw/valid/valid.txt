@@ -1,0 +1,5 @@
+OBIETTIVO
+Immagini per la validazione
+
+USO NEL PROGETTO
+Generare coppie di validation per scegliere iperparametri, epoche e checkpoint. Non aggiornare i pesi su questo split. Mantenerlo fisso nei confronti 20/50/100. TXT versionato; immagini escluse da Git.

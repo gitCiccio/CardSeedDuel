@@ -1,0 +1,5 @@
+OBIETTIVO
+Test automatici del software
+
+USO NEL PROGETTO
+Verificare regole del gioco, mapping delle classi, generazione delle coppie, assenza di sovrapposizioni tra split e interfacce dei modelli. tests non contiene il dataset di test, che e in data/raw/test. Committare i test e solo eventuali fixture piccole e necessarie.

@@ -1,0 +1,24 @@
+# Ambiente locale e IDE
+.venv/
+venv/
+.idea/
+.local-backup-cardseedduel/
+.vscode/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ipynb_checkpoints/
+.env
+.env.*
+!.env.example
+# Dataset: immagini, CSV e dati elaborati sono versionabili in Git.
+# I modelli preaddestrati restano esclusi tramite le estensioni sotto.
+# Pesi e artefatti pesanti
+*.h5
+*.hdf5
+*.pt
+*.pth
+*.ckpt
+*.zip
+/results/runs/
+*.log

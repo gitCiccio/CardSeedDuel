@@ -1,0 +1,5 @@
+OBIETTIVO
+Configurazioni degli esperimenti
+
+USO NEL PROGETTO
+Conservare iperparametri, seed, percentuale di training (20/50/100), percorsi e opzioni comuni. Usare in futuro file YAML o JSON letti dagli script. Condividere configurazioni riproducibili in Git; non inserire credenziali.

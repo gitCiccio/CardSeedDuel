@@ -1,0 +1,5 @@
+OBIETTIVO
+Dati e risorse locali
+
+USO NEL PROGETTO
+raw contiene il dataset originale; processed conterra indici filtrati e coppie; pretrained conserva i modelli Keras forniti con il dataset. Il codice che elabora i dati va in src/card_suit_duel/data. Committare i TXT, non immagini, CSV originali o pesi.

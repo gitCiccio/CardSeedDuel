@@ -1,0 +1,5 @@
+OBIETTIVO
+Esplorazione e studio
+
+USO NEL PROGETTO
+Usare notebook per studiare DeepProbLog, visualizzare immagini, provare inferenza e analizzare risultati. Spostare il codice stabile in src. Committare notebook utili, evitando output voluminosi e percorsi personali.

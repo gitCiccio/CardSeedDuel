@@ -1,0 +1,5 @@
+OBIETTIVO
+Dati derivati per il duello
+
+USO NEL PROGETTO
+Salvare indici delle immagini ammesse e coppie (immagine1, immagine2, outcome) separate per train, valid e test. Generare ogni coppia all interno del suo split originale. Registrare seed, parametri e mapping delle classi. Dati rigenerabili esclusi da Git; conservare script e configurazioni.

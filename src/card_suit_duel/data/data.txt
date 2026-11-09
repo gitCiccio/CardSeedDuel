@@ -1,0 +1,5 @@
+OBIETTIVO
+Codice per caricare e preparare i dati
+
+USO NEL PROGETTO
+Implementare filtro dei semi, gestione del CSV, preprocessing, generazione delle coppie, Dataset PyTorch e adattatori Query/tensor per DeepProbLog. Questa cartella contiene codice; immagini e CSV sono in data alla radice.

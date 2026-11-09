@@ -1,0 +1,5 @@
+OBIETTIVO
+Package applicativo del progetto
+
+USO NEL PROGETTO
+Integrare preparazione dati, modelli, ragionamento e pipeline di training e valutazione. __init__.py identifica il package. train.py e attualmente un segnaposto vuoto, non una pipeline funzionante. Versionare il package.

@@ -1,0 +1,5 @@
+OBIETTIVO
+Documentazione e presentazione
+
+USO NEL PROGETTO
+Conservare traccia originale, decisioni progettuali, protocollo sperimentale e slide finali (8-12). Il PDF della consegna e gia presente. Versionare documentazione e presentazione, senza credenziali o dati personali non necessari.

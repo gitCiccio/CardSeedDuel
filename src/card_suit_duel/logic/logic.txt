@@ -1,0 +1,5 @@
+OBIETTIVO
+Regole simboliche del gioco
+
+USO NEL PROGETTO
+Inserire i file ProbLog .pl: predicato neurale suit, relazione beats e regole dei tre risultati. Usare sintassi ProbLog compatibile con DeepProbLog. Le regole sono note e non apprese. Verificare tutte le nove combinazioni di semi con test software.

@@ -1,0 +1,5 @@
+OBIETTIVO
+Immagini per la valutazione finale
+
+USO NEL PROGETTO
+Generare coppie di test e misurare accuracy e F1 dopo aver fissato il modello. Non usare il test per scegliere iperparametri o checkpoint. Questa cartella e distinta da tests, che contiene test software. TXT versionato; immagini escluse da Git.

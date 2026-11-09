@@ -1,0 +1,5 @@
+OBIETTIVO
+Modelli Keras distribuiti con il dataset
+
+USO NEL PROGETTO
+I file HDF5 .h5 contengono architetture e pesi di classificatori gia addestrati. Verificate uscite softmax a 14 e 53 classi e input RGB 200x200. Non sono esempi di training, non producono i tre esiti del duello e non sono caricabili direttamente come moduli PyTorch. Non necessari al progetto; conservarli localmente senza committarli. Le percentuali nei nomi non sono risultati del nostro esperimento.

@@ -1,0 +1,5 @@
+OBIETTIVO
+Architetture neurali e integrazione DeepProbLog
+
+USO NEL PROGETTO
+Definire la rete PyTorch per la distribuzione sui tre semi e la baseline che riceve due immagini e predice il risultato. Integrare Network, Model ed engine DeepProbLog. Conservare qui il codice delle architetture; i checkpoint prodotti vanno in results.
