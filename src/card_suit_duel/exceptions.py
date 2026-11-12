@@ -54,3 +54,29 @@ class MetadataError(DatasetError):
     Individual invalid rows may instead be reported and skipped when the agreed
     inspection policy allows the operation to continue.
     """
+
+class MappingError(CardSuitDuelError):
+    """Base class for failures in the shared class-to-index contract.
+
+    Catch this type where an invalid mapping input can be reported or handled.
+    Mapping failures can occur in data preparation, training or inference, so
+    they are not restricted to dataset errors.
+    """
+
+
+class InvalidMappingValueError(MappingError):
+    """A value cannot be mapped to one of the configured model classes.
+
+    Use for unknown labels, unsupported suits (such as diamonds in the duel),
+    or a missing suit. Include the supplied value and accepted values in the
+    message. A valid original card may still be outside the game's domain.
+    """
+
+
+class InvalidMappingIndexError(MappingError):
+    """An index is not a valid integer position in the shared class order.
+
+    Use for out-of-range indices, negative indices or incorrect input types.
+    Reject booleans explicitly: Python treats bool as an int subclass.
+    Include the invalid index and permitted range in the message.
+    """
