@@ -20,5 +20,6 @@ __pycache__/
 *.pth
 *.ckpt
 *.zip
+/work_sessions
 /results/runs/
 *.log
