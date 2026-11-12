@@ -1,6 +1,6 @@
 """Behavioral tests for the shared metadata and class-index contract.
 
-Run from the repository root after making ``src`` importable::
+Run from the repository root after installing the project with ``python -m pip install -e .``::
 
     python -m unittest discover -s tests -p "test_*.py" -v
 
@@ -113,6 +113,21 @@ class CardImageTests(unittest.TestCase):
     def test_non_joker_requires_a_suit(self):
         with self.assertRaises(MetadataError):
             replace(self.card, suit=None)
+
+
+    def test_label_and_suit_must_agree(self):
+        for suit in (CardSuit.CLUBS, CardSuit.SPADES, CardSuit.DIAMONDS):
+            with self.subTest(suit=suit):
+                with self.assertRaisesRegex(MetadataError, 'match rank and suit'):
+                    replace(self.card, suit=suit)
+
+    def test_label_and_rank_must_agree(self):
+        with self.assertRaisesRegex(MetadataError, 'match rank and suit'):
+            replace(self.card, rank='king')
+
+    def test_joker_rank_uses_the_original_marker(self):
+        with self.assertRaisesRegex(MetadataError, 'rank marker'):
+            replace(self.card, original_label='joker', suit=None, rank='ace')
 
 
 class MappingTests(unittest.TestCase):

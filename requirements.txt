@@ -1,0 +1,2 @@
+# Install the local package and dependencies declared in pyproject.toml.
+-e .

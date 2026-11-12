@@ -138,3 +138,14 @@ class CardImage:
             raise MetadataError(
                 "Only Joker can have suit=None."
             )
+
+        if is_joker:
+            if self.rank != "xxx":
+                raise MetadataError("Joker must use the original rank marker 'xxx'.")
+        else:
+            expected_label = f"{self.rank} of {self.suit.value}"
+            if self.original_label != expected_label:
+                raise MetadataError(
+                    f"original_label must match rank and suit: expected "
+                    f"{expected_label!r}, received {self.original_label!r}."
+                )
