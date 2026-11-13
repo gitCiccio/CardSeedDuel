@@ -59,3 +59,22 @@ def require_text_field(
     if not allow_empty and not value:
         raise MetadataError(f"{source_name} field {field!r} cannot be empty.")
     return value
+
+
+def validate_record_shape(
+    row: Mapping[str | None, object],
+    *,
+    source_name: str = "CSV",
+) -> None:
+    """Require the field count expected by default csv.DictReader settings.
+
+    Extra fields produce a None key; missing fields produce None values.
+    Empty strings remain valid here and are checked by field validators.
+
+    Example:
+        >>> validate_record_shape({"path": "train/card.jpg", "suit": ""})
+    """
+    if None in row or any(value is None for value in row.values()):
+        raise MetadataError(
+            f"{source_name} record does not match its CSV header."
+        )

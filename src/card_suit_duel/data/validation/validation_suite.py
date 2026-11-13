@@ -5,7 +5,6 @@ artifacts. Metadata helpers log per-row progress through LoggingManager;
 expected invalid rows become findings without full exception tracebacks.
 """
 from pathlib import Path
-from card_suit_duel.data.validation.sub_validation.serialization import export_validation as export_validation
 from card_suit_duel.data.mapping.definitions import DATASET_SPLITS
 from card_suit_duel.data.validation.validation_result import DatasetValidationResult
 from card_suit_duel.data.validation.sub_validation.validation_metadata import read_input, parse_rows
@@ -85,3 +84,7 @@ def validate_dataset(
         unreferenced_images=find_unreferenced_images(rows, root),
         source_sha256=fingerprint,
     )
+
+
+# Re-export after definitions to avoid circular initialization with serialization.
+from card_suit_duel.data.serialization import export_validation as export_validation

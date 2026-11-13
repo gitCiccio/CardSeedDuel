@@ -6,7 +6,7 @@ import csv
 import hashlib
 import io
 from pathlib import Path
-from card_suit_duel.data.metadata_checks import validate_required_columns
+from card_suit_duel.data.metadata_checks import validate_required_columns, validate_record_shape
 from card_suit_duel.data.mapping.definitions import REQUIRED_COLUMNS, ValidationStatus
 from card_suit_duel.data.validation.validation import parse_card_row
 from card_suit_duel.data.validation.validation_result import RowValidationResult, ValidationIssue
@@ -54,14 +54,6 @@ def read_input(
     return rows, fingerprint
 
 
-def _is_valid_record(row):
-    """Reject records with more or fewer fields than the CSV header."""
-    if None in row or any(value is None for value in row.values()):
-        raise MetadataError(
-            "CSV record does not match the header."
-        )
-
-
 def parse_rows(
         rows: list[dict]
 ) -> tuple[dict[int, RowValidationResult], dict[int, tuple]]:
@@ -80,7 +72,7 @@ def parse_rows(
         try:
             # DictReader uses a None key for excess fields and None values
             # when a record has fewer fields than the header.
-            _is_valid_record(row)
+            validate_record_shape(row, source_name="Metadata")
 
             card = parse_card_row(row)
             class_index = int(row["class index"])

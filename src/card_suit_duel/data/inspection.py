@@ -6,7 +6,7 @@ Only the CLI configures logs and writes output files.
 """
 
 from card_suit_duel.data.mapping.definitions import DATASET_SPLITS, IMAGE_EXTENSIONS, REQUIRED_COLUMNS
-from card_suit_duel.data.validation.sub_validation.serialization import (
+from card_suit_duel.data.serialization import (
     build_report, write_json as save_report,
 )
 

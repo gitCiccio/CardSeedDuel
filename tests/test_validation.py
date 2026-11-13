@@ -8,7 +8,6 @@ import hashlib
 import json
 import tempfile
 import unittest
-from dataclasses import replace
 from pathlib import Path
 from unittest.mock import patch
 
@@ -20,7 +19,7 @@ from card_suit_duel.data.validation.validation_result import (
     RowValidationResult, ValidationIssue,
 )
 from card_suit_duel.data.validation.validation_suite import validate_dataset, export_validation
-from card_suit_duel.data.validation.sub_validation.serialization import serialize_row
+from card_suit_duel.data.serialization import serialize_row
 from card_suit_duel.exceptions import DatasetStructureError, ImageValidationError, MetadataError
 
 
