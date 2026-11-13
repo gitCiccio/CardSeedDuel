@@ -208,8 +208,8 @@ def export_validation(
         (ValidationStatus.REVIEW, "review_rows.json"),
     ):
         write_json(
-            output_directory / filename,
-            [
+            output_path=output_directory / filename,
+            report=[
                 serialize_row(row)
                 for row in result.rows
                 if row.status is status
@@ -217,12 +217,12 @@ def export_validation(
         )
 
     write_json(
-        output_directory / "unreferenced_images.json",
-        list(result.unreferenced_images),
+        output_path=output_directory / "unreferenced_images.json",
+        report=list(result.unreferenced_images),
     )
 
     summary = build_validation_summary(result, output_directory.name)
 
-    write_json(output_directory / "summary.json", summary)
+    write_json(report=summary, output_path=output_directory / "summary.json")
 
     return summary

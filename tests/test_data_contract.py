@@ -10,8 +10,9 @@ No dataset, Pillow, PyTorch or DeepProbLog installation is required.
 import unittest
 from dataclasses import FrozenInstanceError, replace
 
+from card_suit_duel.data.mapping.definitions import CardSuit, DatasetSplit, GameOutcome
 from card_suit_duel.data.mapping.schema import (
-    CardImage, CardSuit, DatasetSplit, GameOutcome,
+    CardImage,
 )
 from card_suit_duel.data.mapping.mappings import (
     SUIT_DOMAIN, OUTCOME_DOMAIN, SUIT_TO_INDEX, OUTCOME_TO_INDEX,

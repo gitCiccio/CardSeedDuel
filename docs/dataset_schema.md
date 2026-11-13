@@ -18,7 +18,7 @@ cartella con l'etichetta e l'unicità degli identificativi sono controlli della
 preparazione del dataset, non di una singola dataclass.
 
 ```python
-from card_suit_duel.data.schema import CardImage, CardSuit, DatasetSplit
+from card_suit_duel.data.mapping.schema import CardImage, CardSuit, DatasetSplit
 
 card = CardImage(
     image_id="train/ace of hearts/001.jpg",

@@ -2,10 +2,10 @@
 
 from types import MappingProxyType
 from card_suit_duel.data.mapping.definitions import (
-    GameOutcome, SUIT_CLASSES, OUTCOME_CLASSES,
+    CardSuit, GameOutcome, SUIT_CLASSES, OUTCOME_CLASSES,
 )
 
-from card_suit_duel.data.mapping.schema import CardSuit, GameOutcome
+
 from card_suit_duel.exceptions import (
     InvalidMappingIndexError,
     InvalidMappingValueError,
