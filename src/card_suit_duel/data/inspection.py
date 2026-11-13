@@ -5,9 +5,13 @@ run_inspection() to build a report, then save_report() to persist it.
 Only the CLI configures logs and writes output files.
 """
 
+from card_suit_duel.data.mapping.definitions import DATASET_SPLITS, IMAGE_EXTENSIONS, REQUIRED_COLUMNS
+from card_suit_duel.data.validation.sub_validation.serialization import (
+    build_report, write_json as save_report,
+)
+
 import argparse
 import csv
-import json
 from collections import Counter
 from pathlib import Path
 from typing import Any
@@ -20,17 +24,9 @@ from card_suit_duel.logging_config import LoggingManager
 logger = LoggingManager.get_logger(__name__)
 
 
-DATASET_SPLITS = ("train", "valid", "test")
 
-IMAGE_EXTENSIONS = {
-    ".jpg",
-    ".jpeg",
-    ".png",
-    ".bmp",
-    ".tif",
-    ".tiff",
-    ".webp",
-}
+
+
 
 def validate_dataset_paths(dataset_root: Path, metadata_path: Path) -> None:
     """Check that the dataset root and metadata file are available."""
@@ -70,13 +66,7 @@ def read_metadata(metadata_path: Path) -> list[dict[str, str]]:
     #
     # "data set": original split membership: "train", "valid" or "test".
     # Used to count samples and preserve separation between the splits.
-    required_columns = {
-        "class index",
-        "filepaths",
-        "labels",
-        "card type",
-        "data set"
-    }
+
 
     try:
         with metadata_path.open(
@@ -92,7 +82,7 @@ def read_metadata(metadata_path: Path) -> list[dict[str, str]]:
                     f"Metadata file is empty: {metadata_path}"
                 )
 
-            missing_columns = required_columns - set(columns)
+            missing_columns = REQUIRED_COLUMNS - set(columns)
             logger.debug("Missing required columns: %s", sorted(missing_columns))
 
             if missing_columns:
@@ -366,78 +356,10 @@ def inspect_images(
     }
 
 
-def build_report(
-        rows: list[dict[str, str]],
-        summary: dict[str, dict[str, int]],
-        files_by_split: dict[str, list[Path]],
-        path_comparison: dict[str, Any],
-        image_summary: dict[str, Any],
-        *,
-        dataset_root: Path,
-        metadata_path: Path,
-        project_root: Path,
-) -> dict[str, Any]:
-    """Build a report from computed results; paths must be inside project_root."""
-    return {
-        "schema_version": 1,
-        "inspection_scope": "csv_metadata_filesystem_and_image_properties",
-        "dataset_root": dataset_root.relative_to(
-            project_root
-        ).as_posix(),
-        "metadata": {
-            "source": metadata_path.relative_to(
-                project_root
-            ).as_posix(),
-            "row_count": len(rows),
-            "distinct_class_count": sum(
-                label != "<missing>"
-                for label in summary["rows_by_class"]
-            ),
-            "rows_by_split": summary["rows_by_split"],
-            "rows_by_class": summary["rows_by_class"],
-        },
-        "anomalies": path_comparison,
-        "filesystem": {
-            "image_file_count": sum(
-                len(paths)
-                for paths in files_by_split.values()
-            ),
-            "image_files_by_split": {
-                split: len(paths)
-                for split, paths in files_by_split.items()
-            },
-        },
-        "images": image_summary,
-    }
 
 
-def save_report(
-    report: dict[str, Any],
-    output_path: Path,
-) -> None:
-    """Save the report as readable UTF-8 JSON.
 
-    Parent directories are created when missing.
-    An existing report at the same path is overwritten.
 
-    Raises:
-        OSError: If the directory or output file cannot be written.
-    """
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    with output_path.open(
-        mode="w",
-        encoding="utf-8",
-    ) as report_file:
-        json.dump(
-            report,
-            report_file,
-            indent=4,
-            ensure_ascii=False,
-            sort_keys=True,
-            allow_nan=False,
-        )
-        report_file.write("\n")
 
 
 def run_inspection(
@@ -486,8 +408,8 @@ def main(argv=None, *, project_root: Path | None = None) -> int:
     try:
         report = run_inspection(dataset_root, dataset_root / 'cards.csv', root)
         save_report(report, report_path)
-    except (DatasetStructureError, MetadataError, OSError):
-        logger.exception('Dataset inspection failed')
+    except (DatasetStructureError, MetadataError, OSError) as exc:
+        logger.error("Dataset inspection failed [%s]. Check input paths and CSV schema.", type(exc).__name__)
         return 1
     logger.success('Inspection report saved to %s', report_path.relative_to(root).as_posix())
     return 0

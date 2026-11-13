@@ -1,8 +1,11 @@
 """Shared class orders and conversions for both learning approaches."""
 
 from types import MappingProxyType
+from card_suit_duel.data.mapping.definitions import (
+    GameOutcome, SUIT_CLASSES, OUTCOME_CLASSES,
+)
 
-from card_suit_duel.data.schema import CardSuit, GameOutcome
+from card_suit_duel.data.mapping.schema import CardSuit, GameOutcome
 from card_suit_duel.exceptions import (
     InvalidMappingIndexError,
     InvalidMappingValueError,
@@ -10,17 +13,9 @@ from card_suit_duel.exceptions import (
 
 
 # These tuples are the single source of truth for model output ordering.
-SUIT_CLASSES = (
-    CardSuit.HEARTS,
-    CardSuit.CLUBS,
-    CardSuit.SPADES,
-)
 
-OUTCOME_CLASSES = (
-    GameOutcome.P1_WIN,
-    GameOutcome.P2_WIN,
-    GameOutcome.DRAW,
-)
+
+
 
 
 # Read-only mappings derived from the shared class orders.

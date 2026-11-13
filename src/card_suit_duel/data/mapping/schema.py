@@ -1,38 +1,21 @@
 """Shared categorical types for dataset metadata and game outcomes."""
 
-from enum import Enum
+from card_suit_duel.data.mapping.definitions import (
+    DatasetSplit, CardSuit, JOKER_LABEL, JOKER_RANK,
+    # Explicit re-export for existing callers.
+)
 from dataclasses import dataclass
 from pathlib import PurePosixPath
 
 from card_suit_duel.exceptions import MetadataError
 
-class DatasetSplit(str, Enum):
-    """Original dataset partitions, preserved during preparation."""
-
-    TRAIN = "train"
-    VALID = "valid"
-    TEST = "test"
 
 
-class CardSuit(str, Enum):
-    """Suits present in the original dataset.
-
-    Diamonds belongs to the original dataset but is excluded from the duel.
-    Joker has no suit and will be represented as None in card metadata.
-    """
-
-    HEARTS = "hearts"
-    CLUBS = "clubs"
-    SPADES = "spades"
-    DIAMONDS = "diamonds"
 
 
-class GameOutcome(str, Enum):
-    """Possible outcomes from the first player's perspective."""
 
-    P1_WIN = "p1_win"
-    P2_WIN = "p2_win"
-    DRAW = "draw"
+
+
 
 @dataclass(frozen=True)
 class CardImage:
@@ -129,7 +112,7 @@ class CardImage:
                 f"received {self.image_id!r} and {self.path!r}."
             )
 
-        is_joker = self.original_label == "joker"
+        is_joker = self.original_label == JOKER_LABEL
 
         if is_joker and self.suit is not None:
             raise MetadataError("Joker must have suit=None.")
@@ -140,7 +123,7 @@ class CardImage:
             )
 
         if is_joker:
-            if self.rank != "xxx":
+            if self.rank != JOKER_RANK:
                 raise MetadataError("Joker must use the original rank marker 'xxx'.")
         else:
             expected_label = f"{self.rank} of {self.suit.value}"
