@@ -80,3 +80,25 @@ class InvalidMappingIndexError(MappingError):
     Reject booleans explicitly: Python treats bool as an int subclass.
     Include the invalid index and permitted range in the message.
     """
+
+class ImageValidationError(DatasetError):
+    """An individual image reference cannot be accepted.
+
+    Attributes:
+        reason: Machine-readable rejection code for validation reports.
+        image_path: Original image path relative to the dataset root.
+
+    This error describes one rejected sample, not a failure of the
+    entire dataset. The caller decides whether to collect it and continue.
+    """
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        reason: str,
+        image_path: str,
+    ) -> None:
+        super().__init__(message)
+        self.reason = reason
+        self.image_path = image_path

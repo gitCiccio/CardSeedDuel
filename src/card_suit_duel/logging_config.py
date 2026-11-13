@@ -21,6 +21,7 @@ logging during import. No handlers are installed automatically by this module.
 """
 
 import logging
+import copy
 import sys
 from pathlib import Path
 from threading import RLock
@@ -63,7 +64,29 @@ class _LevelFilter(logging.Filter):
         return record.levelno in self.levels
 
 
-class _ColorFormatter(logging.Formatter):
+class _ReadableFormatter(logging.Formatter):
+    """Format exceptions compactly unless full tracebacks are requested.
+
+    A copied record prevents console formatting from contaminating file output.
+    Compact mode retains exception type/message; it does not suppress raising.
+    """
+
+    def __init__(self, *args, tracebacks=False, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.tracebacks = tracebacks
+
+    def format(self, record):
+        if self.tracebacks or not record.exc_info:
+            return super().format(record)
+        local = copy.copy(record)
+        error = record.exc_info[1]
+        local.exc_info = None
+        local.exc_text = None
+        detail = " ".join(str(error).splitlines())
+        return f"{super().format(local)} | {type(error).__name__}: {detail}"
+
+
+class _ColorFormatter(_ReadableFormatter):
     """Color console records without changing the underlying shared LogRecord."""
 
     COLORS = {logging.DEBUG: "\033[33m", logging.INFO: "\033[34m",
@@ -104,6 +127,7 @@ class LoggingManager:
         *,
         levels: Optional[Iterable[Union[int, str]]] = None,
         colors: bool = True,
+        tracebacks: bool = False,
     ) -> logging.Logger:
         """Enable console logging and, optionally, append to a UTF-8 log file.
 
@@ -116,6 +140,8 @@ class LoggingManager:
                 Overrides the minimum threshold; other severities are excluded.
                 Add "SUCCESS", "WARNING" or "CRITICAL" explicitly when wanted.
                 An empty selection is rejected to avoid accidental silence.
+            tracebacks: Include full exception tracebacks when True. Default
+                compact mode emits exception type and message on one line.
             colors: Enable ANSI console colors (including PyCharm terminals).
                 Disable for consoles without ANSI support or redirected output.
 
@@ -140,14 +166,14 @@ class LoggingManager:
         resolved_level = _resolve_level(level) if selected is None else min(selected)
 
         with cls._lock:
-            formatter = logging.Formatter(cls.FORMAT, datefmt=cls.DATE_FORMAT)
+            formatter = _ReadableFormatter(cls.FORMAT, datefmt=cls.DATE_FORMAT, tracebacks=tracebacks)
             logging.addLevelName(SUCCESS, "SUCCESS")
             handlers = []
             try:
                 console = logging.StreamHandler(sys.stdout)
                 console.set_name(cls._HANDLER_NAMES[0])
                 handlers.append(console)
-                console.setFormatter(_ColorFormatter(cls.FORMAT, datefmt=cls.DATE_FORMAT) if colors else formatter)
+                console.setFormatter(_ColorFormatter(cls.FORMAT, datefmt=cls.DATE_FORMAT, tracebacks=tracebacks) if colors else formatter)
                 if log_file is not None:
                     path = Path(log_file)
                     path.parent.mkdir(parents=True, exist_ok=True)
