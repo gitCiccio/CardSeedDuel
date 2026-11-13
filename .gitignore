@@ -20,5 +20,15 @@ __pycache__/
 *.pth
 *.ckpt
 *.zip
+/work_sessions
 /results/runs/
 *.log
+
+# Local packaging and verification artifacts
+*.egg-info/
+build/
+dist/
+.venv-*/
+
+# Share controlled pipeline execution summaries, not local debug logs.
+!/results/pipeline_output/**/*.log

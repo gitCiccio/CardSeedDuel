@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "card-suit-duel"
+version = "0.1.0"
+description = "Card suit duel dataset preparation and neuro-symbolic experiments"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["Pillow==13.0.0"]
+
+[project.scripts]
+card-inspect = "card_suit_duel.data.inspection:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["card_suit_duel*"]
+
+[tool.setuptools]
+include-package-data = false

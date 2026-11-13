@@ -27,7 +27,7 @@ La traccia usa l'espressione "ASP rules": nell'implementazione DeepProbLog i fil
 Neurosymbolic_project/
 |-- README.md
 |-- .gitignore
-|-- requirements.txt                # attualmente vuoto: dipendenze da definire e verificare
+|-- requirements.txt                # installa il package e le dipendenze da pyproject.toml
 |-- configs/                        # configurazioni riproducibili degli esperimenti
 |-- data/                           # dati locali, separati dal codice
 |   |-- raw/
@@ -93,3 +93,31 @@ Le percentuali nei nomi sono indicazioni del distributore: non sono misure otten
 4. Esperimenti: protocollo comune, metriche, tempi, grafici e raccolta risultati.
 
 Integrazione, revisione e presentazione sono condivise. Lo scheletro attuale documenta l'organizzazione: dipendenze, training, valutazione e download automatico devono ancora essere implementati e verificati.
+
+
+## Installazione ed esecuzione della preparazione dati
+
+Richiede Python 3.11 o superiore (compatibile con Pillow 13.0.0). Nella radice del repository, creare un ambiente
+virtuale con un interprete valido e attivarlo. Quindi:
+
+```bash
+python -m pip install -r requirements.txt
+python -m unittest discover -s tests -p "test_*.py" -v
+python scripts/inspect_dataset.py
+```
+
+`requirements.txt` richiama l'installazione editable del progetto; dipendenze e
+package dentro `src/` sono dichiarati in `pyproject.toml`. Non occorre impostare
+PYTHONPATH o Sources Root per eseguire il codice dopo l'installazione nello stesso
+ambiente. Installare nuovamente se cambiano dipendenze o metadati del package.
+
+È disponibile anche `card-inspect --project-root /percorso/del/progetto`.
+Senza l'opzione, il comando usa la directory corrente come radice.
+
+Lo script in `scripts/` è solo il punto di ingresso. Le funzioni riutilizzabili
+sono in `card_suit_duel.data.inspection`: ricevono percorsi espliciti e non
+configurano il logger. `run_inspection()` restituisce il report senza scriverlo;
+`save_report()` lo salva. I dati originali restano invariati.
+
+Per il contratto dei metadati vedere [docs/dataset_schema.md](docs/dataset_schema.md).
+Per il dettaglio della riorganizzazione vedere [docs/review_fixes.md](docs/review_fixes.md).

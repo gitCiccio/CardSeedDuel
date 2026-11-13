@@ -1,0 +1,42 @@
+{
+    "excluded_by_split": {
+        "test": 70,
+        "train": 1942,
+        "valid": 70
+    },
+    "excluded_by_suit": {
+        "diamonds": 1957,
+        "joker": 125
+    },
+    "excluded_count": 2082,
+    "excluded_index": "excluded_images.csv",
+    "included_by_split": {
+        "test": 195,
+        "train": 5682,
+        "valid": 195
+    },
+    "included_by_suit": {
+        "clubs": 1936,
+        "hearts": 1975,
+        "spades": 2161
+    },
+    "included_count": 6072,
+    "included_index": "filtered_images.csv",
+    "input_count": 8154,
+    "pipeline": "game_suit_filtering",
+    "pipeline_version": 1,
+    "policy": {
+        "allowed_suits": [
+            "hearts",
+            "clubs",
+            "spades"
+        ],
+        "exclude_joker": true,
+        "excluded_suits": [
+            "diamonds"
+        ],
+        "preserve_original_splits": true
+    },
+    "run_id": "20261113T183831Z_d6db5632",
+    "source_sha256": "44c15462d8054c914130d4c946a8188562642b503f12c9028f5dfd87cc9726b2"
+}
