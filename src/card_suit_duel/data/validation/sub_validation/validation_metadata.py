@@ -5,8 +5,8 @@ Expected invalid rows become structured findings, not terminal tracebacks.
 import csv
 import hashlib
 import io
-from collections.abc import Sequence
 from pathlib import Path
+from card_suit_duel.data.metadata_checks import validate_required_columns
 from card_suit_duel.data.mapping.definitions import REQUIRED_COLUMNS, ValidationStatus
 from card_suit_duel.data.validation.validation import parse_card_row
 from card_suit_duel.data.validation.validation_result import RowValidationResult, ValidationIssue
@@ -15,25 +15,6 @@ from card_suit_duel.exceptions import MetadataError
 from card_suit_duel.logging_config import LoggingManager
 
 logger = LoggingManager.get_logger(__name__)
-
-
-def _is_valid_columns(columns: Sequence[str] | None) -> None:
-    """Reject absent headers or ambiguous duplicate column names."""
-    logger.info("Checking the columns: %s", columns)
-    if not columns:
-        raise MetadataError("Metadata has no CSV header.")
-
-    if len(columns) != len(set(columns)):
-        raise MetadataError(
-            "Metadata contains duplicate column names."
-        )
-
-
-def _check_missing(missing: set[str]) -> None:
-    """Raise only when required CSV columns are actually absent."""
-    logger.info("Checking for missing required columns: %s", sorted(missing))
-    if missing:
-        raise MetadataError(f"Missing required columns: {sorted(missing)}.")
 
 
 def read_input(
@@ -55,10 +36,10 @@ def read_input(
 
         columns = reader.fieldnames
 
-        _is_valid_columns(columns)
-
-        missing = REQUIRED_COLUMNS - set(columns)
-        _check_missing(missing)
+        logger.info("Checking the columns: %s", columns)
+        missing = REQUIRED_COLUMNS - set(columns or ())
+        logger.info("Checking for missing required columns: %s", sorted(missing))
+        validate_required_columns(columns, REQUIRED_COLUMNS, source_name="Metadata")
 
         rows = list(reader)
         logger.info("Read %d rows from metadata CSV: %s", len(rows), metadata_path.name)

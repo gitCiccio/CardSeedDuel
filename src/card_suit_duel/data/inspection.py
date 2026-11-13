@@ -10,6 +10,8 @@ from card_suit_duel.data.validation.sub_validation.serialization import (
     build_report, write_json as save_report,
 )
 
+from card_suit_duel.data.metadata_checks import validate_required_columns
+
 import argparse
 import csv
 from collections import Counter
@@ -77,20 +79,9 @@ def read_metadata(metadata_path: Path) -> list[dict[str, str]]:
             reader = csv.DictReader(csv_file, strict=True)
             columns = reader.fieldnames
 
-            if columns is None:
-                raise MetadataError(
-                    f"Metadata file is empty: {metadata_path}"
-                )
-
-            missing_columns = REQUIRED_COLUMNS - set(columns)
+            missing_columns = REQUIRED_COLUMNS - set(columns or ())
             logger.debug("Missing required columns: %s", sorted(missing_columns))
-
-            if missing_columns:
-                raise MetadataError(
-                    f"Missing required columns in {metadata_path}: "
-                    f"{sorted(missing_columns)}. "
-                    f"Found: {columns}"
-                )
+            validate_required_columns(columns, REQUIRED_COLUMNS, source_name="Metadata")
 
             rows = list(reader)
 

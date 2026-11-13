@@ -5,7 +5,7 @@ underscore. In Python this means "internal implementation detail" by convention;
 it does not enforce access restrictions. These are module functions, not methods.
 
 Execution flow:
-    1. Read required text fields through _require_text.
+    1. Read required text fields through require_text_field.
     2. Validate the original class index and convert the split to DatasetSplit.
     3. Derive rank and suit, with a separate rule for Joker.
     4. Construct CardImage, which validates the shared metadata invariants.
@@ -18,6 +18,7 @@ existence, then decodes pixels. It never modifies the source image.
 Invalid rows raise MetadataError; collecting rejections is the caller's job.
 """
 from collections.abc import Mapping
+from card_suit_duel.data.metadata_checks import require_text_field
 from card_suit_duel.data.mapping.definitions import (
     CARD_RANKS, REQUIRED_FIELDS, JOKER_LABEL, JOKER_RANK,
 )
@@ -40,44 +41,6 @@ from PIL import Image, UnidentifiedImageError
 
 
 
-
-def _require_text(
-        row: Mapping[str, str | None],
-        field: str
-) -> str:
-    """Return one required field as unchanged, validated text.
-
-    This private helper centralizes the checks used for every mandatory column.
-    Missing values, non-string values, empty strings and outer whitespace are
-    rejected. No stripping or case conversion is applied to returned data.
-
-    Args:
-        row: One CSV record, typically produced by csv.DictReader.
-        field: Exact original column name to retrieve.
-
-    Returns:
-        The original non-empty string, without outer whitespace.
-
-    Raises:
-        MetadataError: If the field does not meet the text requirements.
-
-    Other modules should call parse_card_row(), not this implementation helper.
-    """
-    value = row.get(field)
-
-    if not isinstance(value, str):
-        raise MetadataError(f"Required field {field!r} is missing or empty.")
-
-    if not value.strip():
-        raise MetadataError(f"Required field {field!r} is empty.")
-
-    if value != value.strip():
-        raise MetadataError(
-            f"Field {field!r} contains leading or trailing "
-            f"whitespace: {value!r}."
-        )
-
-    return value
 
 def _validate_card_rank(rank: str) -> None:
     """Require a recognized rank for a non-Joker card.
@@ -176,11 +139,11 @@ def parse_card_row(
         >>> parse_card_row({})
         Traceback (most recent call last):
             ...
-        card_suit_duel.exceptions.MetadataError: Required field 'class index' is missing or empty.
+        card_suit_duel.exceptions.MetadataError: Metadata field 'class index' is missing or is not text.
     """
 
     values = {
-        field: _require_text(row, field)
+        field: require_text_field(row, field)
         for field in REQUIRED_FIELDS
     }
 
