@@ -1,0 +1,76 @@
+{
+    "cross_split_group_count": 0,
+    "duplicate_group_count": 1,
+    "input_by_split": {
+        "test": 195,
+        "train": 5682,
+        "valid": 195
+    },
+    "input_by_suit": {
+        "clubs": 1936,
+        "hearts": 1975,
+        "spades": 2161
+    },
+    "input_count": 6072,
+    "manual_review_applied": true,
+    "parent_run_id": "20261114T173913Z_87fe4ccf",
+    "pipeline": "exact_image_deduplication",
+    "pipeline_version": 1,
+    "policy": {
+        "color_mode": "RGB",
+        "conflicting_metadata": "review_entire_group",
+        "delete_original_files": false,
+        "group_by": "pixels_sha256",
+        "manual_conflict_resolution": "visual_review_keep_correctly_labeled_reference",
+        "metadata_fields": [
+            "original_label",
+            "rank",
+            "suit"
+        ],
+        "perceptual_similarity_checked": false,
+        "pixel_hash": "sha256(json_mode_width_height + null_byte + raw_pixels)",
+        "split_priority": [
+            "test",
+            "valid",
+            "train"
+        ],
+        "tie_break": "lexical_image_id"
+    },
+    "ready_for_next_phase": true,
+    "removed_by_split": {
+        "test": 0,
+        "train": 1,
+        "valid": 0
+    },
+    "removed_by_suit": {
+        "clubs": 1
+    },
+    "removed_count": 1,
+    "retained_by_split": {
+        "test": 195,
+        "train": 5681,
+        "valid": 195
+    },
+    "retained_by_suit": {
+        "clubs": 1935,
+        "hearts": 1975,
+        "spades": 2161
+    },
+    "retained_count": 6071,
+    "retained_index": "deduplicated_images.csv",
+    "review_by_split": {
+        "test": 0,
+        "train": 0,
+        "valid": 0
+    },
+    "review_by_suit": {},
+    "review_count": 0,
+    "review_group_count": 0,
+    "run_id": "20261114T180134Z_manual_review",
+    "source_sha256": "7a0b686c3e35db26221d064a738cc984d01114775bbcded089e676b6380a86e3",
+    "verification": {
+        "checked_retained_image_count": 6071,
+        "original_run_preserved": true,
+        "retained_pixel_hashes_unique": true
+    }
+}
