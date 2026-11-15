@@ -85,3 +85,4 @@ OUTCOME_CLASSES = (GameOutcome.P1_WIN, GameOutcome.P2_WIN, GameOutcome.DRAW)
 
 IMAGE_EXTENSIONS = frozenset(['.bmp', '.jpeg', '.jpg', '.png', '.tif', '.tiff', '.webp'])
 INDEX_COLUMNS = frozenset(INDEX_FIELDS)
+PAIR_COLUMNS = frozenset(PAIR_FIELDS)

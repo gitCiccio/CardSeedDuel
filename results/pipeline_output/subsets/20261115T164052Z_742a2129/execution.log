@@ -1,0 +1,5 @@
+2026-11-15 17:40:53 | INFO | card_suit_duel.__main__ | Run ID: 20261115T164052Z_742a2129
+2026-11-15 17:40:53 | INFO | card_suit_duel.__main__ | Subset selection seed: 123
+2026-11-15 17:40:53 | INFO | card_suit_duel.__main__ | Training percentages: 20, 50, 100
+2026-11-15 17:40:53 | INFO | card_suit_duel.__main__ | Validation and test remain fixed at the F2.7 source
+2026-11-15 17:40:53 | SUCCESS | card_suit_duel.__main__ | Nested training subsets completed successfully
