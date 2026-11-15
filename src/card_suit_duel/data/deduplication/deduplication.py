@@ -11,6 +11,7 @@ from card_suit_duel.data.deduplication.fingerprints import ImageFingerprint
 from card_suit_duel.data.mapping.definitions import DatasetSplit
 from card_suit_duel.data.mapping.schema import CardImage
 from card_suit_duel.exceptions import MetadataError
+from card_suit_duel.data.metadata_checks import require_unique_identifiers
 from card_suit_duel.logging_config import LoggingManager
 
 logger = LoggingManager.get_logger(__name__)
@@ -22,13 +23,6 @@ _SPLIT_PRIORITY = {
     DatasetSplit.TRAIN: 2,
 }
 
-
-def _require_unique_card_ids(card_ids: set[str], cards: Sequence[CardImage]) -> None:
-    """Reject repeated input identifiers before associating fingerprints."""
-    if len(card_ids) != len(cards):
-        raise MetadataError(
-            "Deduplication input contains repeated image identifiers."
-        )
 
 def _require_new_fingerprint(image_id: str, indexed: dict[str, ImageFingerprint]) -> None:
     """Require a previously unseen image identifier in the fingerprint index."""
@@ -46,7 +40,10 @@ def _index_fingerprints(
     logger.info("Checking associations for %d cards and %d fingerprints", len(cards), len(fingerprints))
     card_ids = {card.image_id for card in cards}
 
-    _require_unique_card_ids(card_ids, cards)
+    require_unique_identifiers(
+        (card.image_id for card in cards),
+        source_name="Deduplication input",
+    )
 
     indexed: dict[str, ImageFingerprint] = {}
 

@@ -67,6 +67,14 @@ REQUIRED_FIELDS = (
     "data set",
 )
 
+PAIR_FIELDS = (
+    "pair_id",
+    "split",
+    "first_image_id",
+    "second_image_id",
+    "outcome",
+)
+
 REQUIRED_COLUMNS = frozenset(REQUIRED_FIELDS)
 DATASET_SPLITS = tuple(split.value for split in DatasetSplit)
 INDEX_FIELDS = ("image_id", "path", "split", "original_label", "rank", "suit")

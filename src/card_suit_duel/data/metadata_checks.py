@@ -1,6 +1,6 @@
 """Shared CSV header and text checks, independent of card-specific rules."""
 
-from collections.abc import Collection, Mapping, Sequence
+from collections.abc import Collection, Iterable, Mapping, Sequence
 
 from card_suit_duel.exceptions import MetadataError
 
@@ -78,3 +78,25 @@ def validate_record_shape(
         raise MetadataError(
             f"{source_name} record does not match its CSV header."
         )
+
+
+def require_unique_identifiers(
+    identifiers: Iterable[str],
+    *,
+    source_name: str = "Metadata",
+) -> None:
+    """Reject repeated string identifiers in any metadata collection.
+
+    Accepts an iterable, including a generator, without requiring card objects.
+    Consumes that iterable once. Identifier contents are validated by callers.
+
+    Example:
+        >>> require_unique_identifiers(["image_a", "image_b"])
+    """
+    seen: set[str] = set()
+    for identifier in identifiers:
+        if identifier in seen:
+            raise MetadataError(
+                f"{source_name} contains repeated image identifiers: {identifier!r}."
+            )
+        seen.add(identifier)

@@ -1,0 +1,200 @@
+{
+    "pipeline": "card_pair_generation",
+    "pipeline_version": 1,
+    "policy": {
+        "allow_repeated_ordered_pairs": false,
+        "allow_self_pairs": false,
+        "balance_outcomes": true,
+        "balance_suit_combinations": true,
+        "insufficient_capacity": "error",
+        "oracle": "determine_outcome",
+        "ordered_pairs": true,
+        "preserve_original_splits": true
+    },
+    "run_id": "20261115T105737Z_b3f5a3e3",
+    "source_image_count": 6071,
+    "source_run_id": "20261114T180134Z_manual_review",
+    "source_sha256": "773e8d01e099cef02db491286c18a632608a8bea24b84042b25d17114294ce98",
+    "splits": {
+        "test": {
+            "index": "test_pairs.csv",
+            "pair_count": 3000,
+            "pairs_by_outcome": {
+                "draw": 1000,
+                "p1_win": 1000,
+                "p2_win": 1000
+            },
+            "pairs_by_suit_combination": [
+                {
+                    "first_suit": "hearts",
+                    "pair_count": 333,
+                    "second_suit": "hearts"
+                },
+                {
+                    "first_suit": "hearts",
+                    "pair_count": 333,
+                    "second_suit": "clubs"
+                },
+                {
+                    "first_suit": "hearts",
+                    "pair_count": 333,
+                    "second_suit": "spades"
+                },
+                {
+                    "first_suit": "clubs",
+                    "pair_count": 333,
+                    "second_suit": "hearts"
+                },
+                {
+                    "first_suit": "clubs",
+                    "pair_count": 333,
+                    "second_suit": "clubs"
+                },
+                {
+                    "first_suit": "clubs",
+                    "pair_count": 333,
+                    "second_suit": "spades"
+                },
+                {
+                    "first_suit": "spades",
+                    "pair_count": 334,
+                    "second_suit": "hearts"
+                },
+                {
+                    "first_suit": "spades",
+                    "pair_count": 334,
+                    "second_suit": "clubs"
+                },
+                {
+                    "first_suit": "spades",
+                    "pair_count": 334,
+                    "second_suit": "spades"
+                }
+            ],
+            "participating_image_count": 195,
+            "requested_pairs_per_outcome": 1000,
+            "seed": 44,
+            "unique_pair_count": 3000
+        },
+        "train": {
+            "index": "train_pairs.csv",
+            "pair_count": 30000,
+            "pairs_by_outcome": {
+                "draw": 10000,
+                "p1_win": 10000,
+                "p2_win": 10000
+            },
+            "pairs_by_suit_combination": [
+                {
+                    "first_suit": "hearts",
+                    "pair_count": 3333,
+                    "second_suit": "hearts"
+                },
+                {
+                    "first_suit": "hearts",
+                    "pair_count": 3333,
+                    "second_suit": "clubs"
+                },
+                {
+                    "first_suit": "hearts",
+                    "pair_count": 3333,
+                    "second_suit": "spades"
+                },
+                {
+                    "first_suit": "clubs",
+                    "pair_count": 3333,
+                    "second_suit": "hearts"
+                },
+                {
+                    "first_suit": "clubs",
+                    "pair_count": 3334,
+                    "second_suit": "clubs"
+                },
+                {
+                    "first_suit": "clubs",
+                    "pair_count": 3334,
+                    "second_suit": "spades"
+                },
+                {
+                    "first_suit": "spades",
+                    "pair_count": 3333,
+                    "second_suit": "hearts"
+                },
+                {
+                    "first_suit": "spades",
+                    "pair_count": 3334,
+                    "second_suit": "clubs"
+                },
+                {
+                    "first_suit": "spades",
+                    "pair_count": 3333,
+                    "second_suit": "spades"
+                }
+            ],
+            "participating_image_count": 5681,
+            "requested_pairs_per_outcome": 10000,
+            "seed": 42,
+            "unique_pair_count": 30000
+        },
+        "valid": {
+            "index": "valid_pairs.csv",
+            "pair_count": 3000,
+            "pairs_by_outcome": {
+                "draw": 1000,
+                "p1_win": 1000,
+                "p2_win": 1000
+            },
+            "pairs_by_suit_combination": [
+                {
+                    "first_suit": "hearts",
+                    "pair_count": 334,
+                    "second_suit": "hearts"
+                },
+                {
+                    "first_suit": "hearts",
+                    "pair_count": 333,
+                    "second_suit": "clubs"
+                },
+                {
+                    "first_suit": "hearts",
+                    "pair_count": 333,
+                    "second_suit": "spades"
+                },
+                {
+                    "first_suit": "clubs",
+                    "pair_count": 334,
+                    "second_suit": "hearts"
+                },
+                {
+                    "first_suit": "clubs",
+                    "pair_count": 333,
+                    "second_suit": "clubs"
+                },
+                {
+                    "first_suit": "clubs",
+                    "pair_count": 333,
+                    "second_suit": "spades"
+                },
+                {
+                    "first_suit": "spades",
+                    "pair_count": 334,
+                    "second_suit": "hearts"
+                },
+                {
+                    "first_suit": "spades",
+                    "pair_count": 333,
+                    "second_suit": "clubs"
+                },
+                {
+                    "first_suit": "spades",
+                    "pair_count": 333,
+                    "second_suit": "spades"
+                }
+            ],
+            "participating_image_count": 195,
+            "requested_pairs_per_outcome": 1000,
+            "seed": 43,
+            "unique_pair_count": 3000
+        }
+    }
+}

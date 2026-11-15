@@ -12,13 +12,15 @@ from pathlib import Path
 from typing import Any
 
 from card_suit_duel.data.mapping.definitions import (
-    ValidationStatus, INDEX_FIELDS, SUIT_CLASSES, DATASET_SPLITS,
+    ValidationStatus, GameOutcome, INDEX_FIELDS, SUIT_CLASSES, DATASET_SPLITS,
 )
 from card_suit_duel.data.mapping.schema import CardImage
 from card_suit_duel.data.validation.validation_result import (
     DatasetValidationResult, RowValidationResult,
 )
 from card_suit_duel.data.validation.sub_validation.validation_paths import public_path
+from card_suit_duel.data.mapping.definitions import PAIR_FIELDS
+from card_suit_duel.data.pairs.schema import CardPair
 
 def _count_cards_by_split(
     cards: Sequence[CardImage],
@@ -77,6 +79,25 @@ def serialize_card(card: CardImage) -> dict[str, str]:
         "original_label": card.original_label,
         "rank": card.rank,
         "suit": card.suit.value if card.suit is not None else "",
+    }
+
+def serialize_pair(pair: CardPair) -> dict[str, str]:
+    """Convert an ordered duel into its portable CSV representation.
+
+    Only image references and the expected outcome are exported.
+    Ground-truth suits are not included as model input features.
+
+    Example:
+        row = serialize_pair(pair)
+        assert row["first_image_id"] == pair.first_card.image_id
+        assert row["outcome"] == pair.outcome.value
+    """
+    return {
+        "pair_id": pair.pair_id,
+        "split": pair.split.value,
+        "first_image_id": pair.first_card.image_id,
+        "second_image_id": pair.second_card.image_id,
+        "outcome": pair.outcome.value,
     }
 
 
@@ -282,6 +303,57 @@ def build_filtering_summary(
         "excluded_index": "excluded_images.csv",
     }
 
+def build_pair_split_summary(
+    pairs: Sequence[CardPair],
+) -> dict[str, Any]:
+    """Summarize outcomes, suit combinations and image participation.
+
+    Counts describe generated pairs, not all images available in the split.
+    A single image may participate in multiple distinct duels.
+    """
+    outcome_counts = Counter(
+        pair.outcome.value
+        for pair in pairs
+    )
+
+    combination_counts = Counter(
+        (
+            pair.first_card.suit.value,
+            pair.second_card.suit.value,
+        )
+        for pair in pairs
+    )
+
+    participating_images = {
+        card.image_id
+        for pair in pairs
+        for card in (pair.first_card, pair.second_card)
+    }
+
+    return {
+        "pair_count": len(pairs),
+        "unique_pair_count": len({
+            pair.pair_id
+            for pair in pairs
+        }),
+        "participating_image_count": len(participating_images),
+        "pairs_by_outcome": {
+            outcome.value: outcome_counts[outcome.value]
+            for outcome in GameOutcome
+        },
+        "pairs_by_suit_combination": [
+            {
+                "first_suit": first_suit.value,
+                "second_suit": second_suit.value,
+                "pair_count": combination_counts[
+                    (first_suit.value, second_suit.value)
+                ],
+            }
+            for first_suit in SUIT_CLASSES
+            for second_suit in SUIT_CLASSES
+        ],
+    }
+
 def export_validation(
     result: DatasetValidationResult,
     output_directory: Path,
@@ -403,3 +475,26 @@ def export_excluded_images(
     fieldnames = (*INDEX_FIELDS, "exclusion_reason")
 
     _write_csv(output_path, fieldnames, rows)
+
+def export_pairs(
+    pairs: Sequence[CardPair],
+    output_path: Path,
+) -> None:
+    """Export ordered duels without overwriting an existing file.
+
+    Pair order is preserved. The parent directory must already exist.
+    An empty collection produces a CSV containing only its header.
+
+    Example:
+        export_pairs(
+            train_pairs,
+            output_directory / "train_pairs.csv",
+        )
+    """
+    rows = [serialize_pair(pair) for pair in pairs]
+
+    _write_csv(
+        output_path,
+        PAIR_FIELDS,
+        rows,
+    )
