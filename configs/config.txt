@@ -1,5 +1,10 @@
 OBIETTIVO
-Configurazioni degli esperimenti
+Configurare la preparazione dati e conservare le decisioni riproducibili.
 
 USO NEL PROGETTO
-Conservare iperparametri, seed, percentuale di training (20/50/100), percorsi e opzioni comuni. Usare in futuro file YAML o JSON letti dagli script. Condividere configurazioni riproducibili in Git; non inserire credenziali.
+preparation.json: percorsi relativi, quantità per esito e seed delle coppie
+e dei sottoinsiemi. Usato da scripts/prepare_dataset.py.
+duplicate_review_decisions.json: revisioni visuali legate all’hash dei pixel;
+nessuna correzione silenziosa del raw. Versionare entrambi i file.
+Le configurazioni dei futuri modelli verranno aggiunte separatamente.
+Non inserire credenziali, percorsi personali assoluti o pesi neurali.

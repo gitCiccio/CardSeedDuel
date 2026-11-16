@@ -10,6 +10,12 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = ["Pillow==13.0.0"]
 
+[project.optional-dependencies]
+neural = [
+    "torch==2.15.0",
+    "torchvision==0.29.2",
+]
+
 [project.scripts]
 card-inspect = "card_suit_duel.data.inspection:main"
 

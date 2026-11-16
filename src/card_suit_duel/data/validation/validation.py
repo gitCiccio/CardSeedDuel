@@ -19,6 +19,7 @@ Invalid rows raise MetadataError; collecting rejections is the caller's job.
 """
 from collections.abc import Mapping
 from card_suit_duel.data.metadata_checks import require_text_field
+from card_suit_duel.data.path_checks import resolve_card_path
 from card_suit_duel.data.mapping.definitions import (
     CARD_RANKS, REQUIRED_FIELDS, JOKER_LABEL, JOKER_RANK,
 )
@@ -29,7 +30,6 @@ from card_suit_duel.data.mapping.schema import (
     DatasetSplit,
 )
 from card_suit_duel.exceptions import (
-    DatasetStructureError,
     ImageValidationError,
     MetadataError,
 )
@@ -207,76 +207,6 @@ def parse_card_row(
 
     return card
 
-def _resolve_dataset_root(dataset_root: Path) -> Path:
-    """Resolve and check the dataset directory before validating a sample.
-
-    This internal prerequisite check raises DatasetStructureError when the root
-    is missing, inaccessible, not a directory or cannot be resolved. Such a
-    failure affects the dataset operation, not just one rejected image.
-    """
-    try:
-        root = dataset_root.resolve(strict=True)
-        if not root.is_dir():
-            raise DatasetStructureError(
-                f"Dataset root is not a directory: {root}"
-            )
-    except (OSError, RuntimeError) as exc:
-        raise DatasetStructureError(
-            f"Cannot access dataset root: {dataset_root}"
-        ) from exc
-    return root
-
-
-def _resolve_image_path(card: CardImage, root: Path) -> Path:
-    """Resolve a sample reference and enforce containment inside the root.
-
-    Internal check: resolving follows symbolic links, so lexical validation by
-    CardImage alone is not sufficient. An unresolved path raises
-    ImageValidationError with reason 'unresolvable_path'; a resolved target
-    outside root uses 'outside_dataset'. File existence is checked separately.
-    """
-    try:
-        image_path = (root / card.path).resolve()
-    except (OSError, RuntimeError) as exc:
-        raise ImageValidationError(
-            f"Cannot resolve image path: {card.path}",
-            reason="unresolvable_path",
-            image_path=card.path,
-        ) from exc
-
-    if not image_path.is_relative_to(root):
-        raise ImageValidationError(
-            f"Image path resolves outside the dataset root: {card.path}",
-            reason="outside_dataset",
-            image_path=card.path,
-        )
-    return image_path
-
-
-def _require_image_file(image_path: Path, original_path: str) -> None:
-    """Require an existing file at the resolved sample location.
-
-    Internal check: 'missing_file' covers absent paths and directories;
-    filesystem access errors that propagate from is_file use 'file_access_error'.
-    The original relative path is preserved in the rejection for reporting.
-    """
-    try:
-        is_file = image_path.is_file()
-    except OSError as exc:
-        raise ImageValidationError(
-            f"Cannot access image file: {original_path}",
-            reason="file_access_error",
-            image_path=original_path,
-        ) from exc
-
-    if not is_file:
-        raise ImageValidationError(
-            f"Image file is missing or is not a regular file: {original_path}",
-            reason="missing_file",
-            image_path=original_path,
-        )
-
-
 def _decode_image(image_path: Path, original_path: str) -> None:
     """Attempt full pixel decoding without converting or saving the image.
 
@@ -304,9 +234,9 @@ def _decode_image(image_path: Path, original_path: str) -> None:
 def validate_card_file(card: CardImage, dataset_root: Path) -> Path:
     """Accept a card's file only when its location and pixels are valid.
 
-    Public entry point: call this after parse_card_row(row). It delegates root
-    checks, path resolution/containment, file checks and decoding to private
-    helpers, in that order. It does not resize images, filter suits or write
+    Public entry point: call this after parse_card_row(row). It delegates
+    filesystem checks to the shared resolve_card_path function, then decodes
+    the image through its private helper. It does not resize images, filter suits or write
     files. Metadata consistency is the parser and CardImage's responsibility.
 
     Args:
@@ -354,8 +284,6 @@ def validate_card_file(card: CardImage, dataset_root: Path) -> Path:
         On ImageValidationError, store the row number, reason and image_path in
         the rejection report. The caller handles logging to avoid duplicates.
     """
-    root = _resolve_dataset_root(dataset_root)
-    image_path = _resolve_image_path(card, root)
-    _require_image_file(image_path, card.path)
+    image_path = resolve_card_path(card, dataset_root)
     _decode_image(image_path, card.path)
     return image_path

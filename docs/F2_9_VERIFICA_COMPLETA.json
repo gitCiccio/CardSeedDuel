@@ -1,0 +1,67 @@
+{
+  "all_conditions_complete": true,
+  "partial_runs_preserved": [
+    "20261116T231015Z_dda8e157",
+    "20261116T231445Z_7438653e",
+    "20261116T231509Z_fa575049"
+  ],
+  "complete_runs": {
+    "20": {
+      "run_id": "20261116T231929Z_f1190810",
+      "counts": {
+        "train": 6000,
+        "valid": 3000,
+        "test": 3000
+      },
+      "last_batches": {
+        "test": 24,
+        "train": 16,
+        "valid": 24
+      },
+      "hashes": {
+        "selected_train": "f9ee9bb45a6bbc750fbd139f110b04bce6cde7d62e5f269afbf7f8b7633c059b",
+        "source_test": "7512d451bc762067547144627b81337c28eea41530a07d2dc54c8d3278864c18",
+        "source_train": "5976646336c91c5803bce105f7305c266d2e351711a2c507ed28694834deebc4",
+        "source_valid": "6c22b4eaa5487b4085e2554feeff59bdd19ad65af7748afe287b0bb775175f2e"
+      }
+    },
+    "50": {
+      "run_id": "20261116T232034Z_d30b523f",
+      "counts": {
+        "train": 15000,
+        "valid": 3000,
+        "test": 3000
+      },
+      "last_batches": {
+        "test": 24,
+        "train": 24,
+        "valid": 24
+      },
+      "hashes": {
+        "selected_train": "4ea845322111d692a029777480e023443601c6d0583ac057f260c43a1c0fd947",
+        "source_test": "7512d451bc762067547144627b81337c28eea41530a07d2dc54c8d3278864c18",
+        "source_train": "5976646336c91c5803bce105f7305c266d2e351711a2c507ed28694834deebc4",
+        "source_valid": "6c22b4eaa5487b4085e2554feeff59bdd19ad65af7748afe287b0bb775175f2e"
+      }
+    },
+    "100": {
+      "run_id": "20261116T232221Z_e49c969d",
+      "counts": {
+        "train": 30000,
+        "valid": 3000,
+        "test": 3000
+      },
+      "last_batches": {
+        "test": 24,
+        "train": 16,
+        "valid": 24
+      },
+      "hashes": {
+        "selected_train": "5976646336c91c5803bce105f7305c266d2e351711a2c507ed28694834deebc4",
+        "source_test": "7512d451bc762067547144627b81337c28eea41530a07d2dc54c8d3278864c18",
+        "source_train": "5976646336c91c5803bce105f7305c266d2e351711a2c507ed28694834deebc4",
+        "source_valid": "6c22b4eaa5487b4085e2554feeff59bdd19ad65af7748afe287b0bb775175f2e"
+      }
+    }
+  }
+}

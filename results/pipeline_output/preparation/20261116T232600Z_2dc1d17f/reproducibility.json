@@ -1,0 +1,39 @@
+{
+    "index_sha256": {
+        "deduplicated": "773e8d01e099cef02db491286c18a632608a8bea24b84042b25d17114294ce98",
+        "filtered": "7a0b686c3e35db26221d064a738cc984d01114775bbcded089e676b6380a86e3",
+        "pairs_test": "7512d451bc762067547144627b81337c28eea41530a07d2dc54c8d3278864c18",
+        "pairs_train": "5976646336c91c5803bce105f7305c266d2e351711a2c507ed28694834deebc4",
+        "pairs_valid": "6c22b4eaa5487b4085e2554feeff59bdd19ad65af7748afe287b0bb775175f2e",
+        "train_100": "5976646336c91c5803bce105f7305c266d2e351711a2c507ed28694834deebc4",
+        "train_20": "f9ee9bb45a6bbc750fbd139f110b04bce6cde7d62e5f269afbf7f8b7633c059b",
+        "train_50": "4ea845322111d692a029777480e023443601c6d0583ac057f260c43a1c0fd947",
+        "validated": "44c15462d8054c914130d4c946a8188562642b503f12c9028f5dfd87cc9726b2"
+    },
+    "manual_decisions": [
+        {
+            "evidence": "User and assistant visually inspected both copies; both depict the four of spades.",
+            "original_images_modified": false,
+            "pixels_sha256": "37f4a723d9d53586212c950682c2cfca6e5188f05bf5982f03f9c169ee62d8dd",
+            "reason": "duplicate_with_incorrect_label",
+            "removed_id": "train/four of clubs/127.jpg",
+            "representative_id": "train/four of spades/120.jpg",
+            "reviewed_at_utc": "2026-11-14T18:01:34.981302+00:00",
+            "source_run_id": "20261114T173913Z_87fe4ccf"
+        }
+    ],
+    "pair_seeds": {
+        "test": 44,
+        "train": 42,
+        "valid": 43
+    },
+    "pairs_per_outcome": {
+        "test": 1000,
+        "train": 10000,
+        "valid": 1000
+    },
+    "schema_version": 1,
+    "source_csv_sha256": "e5c3221e53c03fc83902d17a16c2b25ebe9477ec810b5683808573f5830b485d",
+    "source_game_images_sha256": "a4f11b4cbe8988b3cca5975483268758431252ea31546f281e1d1a30aeecd61a",
+    "subset_seed": 123
+}

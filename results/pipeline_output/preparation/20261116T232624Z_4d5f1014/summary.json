@@ -1,0 +1,21 @@
+{
+    "companion_clone_verified": false,
+    "data_preparation_complete": true,
+    "indices": {
+        "deduplicated": "03_deduplication/deduplicated_images.csv",
+        "filtered": "02_filtering/20261116T232636Z_3b44534b/filtered_images.csv",
+        "pairs_test": "04_pairs/20261116T232642Z_71543205/test_pairs.csv",
+        "pairs_train": "04_pairs/20261116T232642Z_71543205/train_pairs.csv",
+        "pairs_valid": "04_pairs/20261116T232642Z_71543205/valid_pairs.csv",
+        "train_100": "05_subsets/20261116T232643Z_ca2b40b2/100/train_pairs.csv",
+        "train_20": "05_subsets/20261116T232643Z_ca2b40b2/20/train_pairs.csv",
+        "train_50": "05_subsets/20261116T232643Z_ca2b40b2/50/train_pairs.csv",
+        "validated": "01_validation/validated_images.csv"
+    },
+    "model_integration_verified": false,
+    "pipeline": "dataset_preparation",
+    "pipeline_version": 1,
+    "run_id": "20261116T232624Z_4d5f1014",
+    "semantic_sha256": "6880fe9dfd491615b199686b0f29318fa8eff4867dc1bd3835d69ad7766e872d",
+    "subset_manifest": "05_subsets/20261116T232643Z_ca2b40b2/summary.json"
+}

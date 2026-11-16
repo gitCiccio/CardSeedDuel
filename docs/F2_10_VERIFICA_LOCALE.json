@@ -1,0 +1,19 @@
+{
+  "runs": [
+    "20261116T232600Z_2dc1d17f",
+    "20261116T232624Z_4d5f1014"
+  ],
+  "semantic_sha256": "6880fe9dfd491615b199686b0f29318fa8eff4867dc1bd3835d69ad7766e872d",
+  "reproducibility_manifests_equal": true,
+  "indices_match_existing_runs": {
+    "validated": true,
+    "filtered": true,
+    "deduplicated": true,
+    "pairs_train": true,
+    "pairs_valid": true,
+    "pairs_test": true,
+    "train_20": true,
+    "train_50": true,
+    "train_100": true
+  }
+}

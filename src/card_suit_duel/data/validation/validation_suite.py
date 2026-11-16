@@ -11,7 +11,7 @@ from card_suit_duel.data.validation.sub_validation.validation_metadata import re
 from card_suit_duel.data.validation.sub_validation.validation_paths import find_path_groups, find_path_conflicts
 from card_suit_duel.data.validation.sub_validation.validation_classes import find_class_conflicts, check_result_integrity
 from card_suit_duel.data.validation.sub_validation.validation_images import classify_candidates, find_unreferenced_images
-from card_suit_duel.exceptions import DatasetStructureError
+from card_suit_duel.data.path_checks import resolve_dataset_root
 from card_suit_duel.logging_config import LoggingManager
 
 logger = LoggingManager.get_logger(__name__)
@@ -19,10 +19,7 @@ logger = LoggingManager.get_logger(__name__)
 
 def _is_valid_dir(root: Path) -> None:
     """Require an available dataset directory before processing rows."""
-    if not root.is_dir():
-        raise DatasetStructureError(
-            "Dataset root is missing or is not a directory."
-        )
+    resolve_dataset_root(root)
 
 
 def validate_dataset(

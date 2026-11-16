@@ -1,0 +1,2 @@
+image_id,path,split,original_label,rank,suit,removal_reason,representative_id
+train/four of clubs/127.jpg,train/four of clubs/127.jpg,train,four of clubs,four,clubs,duplicate_with_incorrect_label,train/four of spades/120.jpg

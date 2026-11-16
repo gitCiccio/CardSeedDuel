@@ -12,6 +12,8 @@ from card_suit_duel.data.serialization import (
 
 from card_suit_duel.data.metadata_checks import validate_required_columns
 
+from card_suit_duel.data.path_checks import resolve_dataset_root
+
 import argparse
 import csv
 from collections import Counter
@@ -32,10 +34,7 @@ logger = LoggingManager.get_logger(__name__)
 
 def validate_dataset_paths(dataset_root: Path, metadata_path: Path) -> None:
     """Check that the dataset root and metadata file are available."""
-    if not dataset_root.is_dir():
-        raise DatasetStructureError(
-            f"Dataset directory not found: {dataset_root}"
-        )
+    resolve_dataset_root(dataset_root)
 
     if not metadata_path.is_file():
         raise DatasetStructureError(

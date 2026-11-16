@@ -9,8 +9,8 @@ from pathlib import Path
 from PIL import Image, UnidentifiedImageError
 
 from card_suit_duel.data.mapping.schema import CardImage
+from card_suit_duel.data.path_checks import resolve_card_reference
 from card_suit_duel.exceptions import (
-    DatasetStructureError,
     ImageValidationError,
 )
 
@@ -29,45 +29,6 @@ class ImageFingerprint:
     file_sha256: str
     pixels_sha256: str
 
-
-def _resolve_image_path(
-    card: CardImage,
-    dataset_root: Path,
-) -> Path:
-    """Resolve an image path and require containment within the dataset.
-
-    Symbolic links are resolved before containment is checked.
-    A missing dataset root stops the operation.
-    """
-    try:
-        root = dataset_root.resolve(strict=True)
-    except (OSError, RuntimeError) as exc:
-        raise DatasetStructureError(
-            "Cannot resolve the dataset root."
-        ) from exc
-
-    if not root.is_dir():
-        raise DatasetStructureError(
-            "Dataset root is not a directory."
-        )
-
-    try:
-        image_path = (root / card.path).resolve()
-    except (OSError, RuntimeError) as exc:
-        raise ImageValidationError(
-            f"Cannot resolve image: {card.path}",
-            reason="unresolvable_path",
-            image_path=card.path,
-        ) from exc
-
-    if not image_path.is_relative_to(root):
-        raise ImageValidationError(
-            f"Image resolves outside the dataset: {card.path}",
-            reason="outside_dataset",
-            image_path=card.path,
-        )
-
-    return image_path
 
 def _read_image_bytes(
     image_path: Path,
@@ -167,7 +128,7 @@ def fingerprint_card(
         assert len(fingerprint.file_sha256) == 64
         assert len(fingerprint.pixels_sha256) == 64
     """
-    image_path = _resolve_image_path(card, dataset_root)
+    image_path = resolve_card_reference(card, dataset_root)
     content = _read_image_bytes(image_path, card.path)
 
     return ImageFingerprint(
