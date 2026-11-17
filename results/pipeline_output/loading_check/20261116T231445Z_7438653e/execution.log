@@ -1,6 +1,0 @@
-2026-11-17 00:14:45 | INFO | card_suit_duel.__main__ | Run ID: 20261116T231445Z_7438653e
-2026-11-17 00:14:45 | INFO | card_suit_duel.__main__ | Training percentage: 50
-2026-11-17 00:14:45 | INFO | card_suit_duel.__main__ | train: 32/15000 pairs decoded
-2026-11-17 00:14:45 | INFO | card_suit_duel.__main__ | valid: 32/3000 pairs decoded
-2026-11-17 00:14:45 | INFO | card_suit_duel.__main__ | test: 32/3000 pairs decoded
-2026-11-17 00:14:45 | SUCCESS | card_suit_duel.__main__ | Requested batch checks completed; no model was trained
