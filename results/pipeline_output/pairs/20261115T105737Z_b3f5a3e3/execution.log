@@ -1,0 +1,5 @@
+2026-11-15 11:57:37 | INFO | card_suit_duel.__main__ | Run ID: 20261115T105737Z_b3f5a3e3
+2026-11-15 11:57:37 | INFO | card_suit_duel.__main__ | train: 30000 pairs, 10000 per outcome, seed 42
+2026-11-15 11:57:37 | INFO | card_suit_duel.__main__ | valid: 3000 pairs, 1000 per outcome, seed 43
+2026-11-15 11:57:37 | INFO | card_suit_duel.__main__ | test: 3000 pairs, 1000 per outcome, seed 44
+2026-11-15 11:57:37 | SUCCESS | card_suit_duel.__main__ | Card-pair generation completed successfully

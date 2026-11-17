@@ -1,0 +1,32 @@
+[
+    {
+        "cross_split": false,
+        "members": [
+            {
+                "decision": "removed",
+                "file_sha256": "b862d1b05361e9e3d5a2b03f668a2db87d0beb6e88362b7ce72b0d0a4e7b4828",
+                "image_id": "train/four of clubs/127.jpg",
+                "original_label": "four of clubs",
+                "path": "train/four of clubs/127.jpg",
+                "rank": "four",
+                "split": "train",
+                "suit": "clubs"
+            },
+            {
+                "decision": "retained",
+                "file_sha256": "b862d1b05361e9e3d5a2b03f668a2db87d0beb6e88362b7ce72b0d0a4e7b4828",
+                "image_id": "train/four of spades/120.jpg",
+                "original_label": "four of spades",
+                "path": "train/four of spades/120.jpg",
+                "rank": "four",
+                "split": "train",
+                "suit": "spades"
+            }
+        ],
+        "pixels_sha256": "37f4a723d9d53586212c950682c2cfca6e5188f05bf5982f03f9c169ee62d8dd",
+        "representative_id": "train/four of spades/120.jpg",
+        "requires_review": false,
+        "resolution": "manual_visual_review",
+        "resolution_reason": "duplicate_with_incorrect_label"
+    }
+]

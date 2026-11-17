@@ -1,0 +1,28 @@
+{
+    "accepted_by_split": {
+        "test": 265,
+        "train": 7624,
+        "valid": 265
+    },
+    "accepted_count": 8154,
+    "accepted_index": "validated_images.csv",
+    "issue_counts": {
+        "missing_file": 1
+    },
+    "pipeline": "dataset_validation",
+    "pipeline_version": 1,
+    "policy": {
+        "conflicting_metadata": "review",
+        "decode_images": true,
+        "filter_game_suits": false,
+        "identical_references": "keep_first_valid",
+        "metadata_normalization": "strict"
+    },
+    "ready_for_next_phase": true,
+    "rejected_count": 1,
+    "review_count": 0,
+    "row_count": 8155,
+    "run_id": "20261113T145404Z_ffac6207",
+    "source_sha256": "e5c3221e53c03fc83902d17a16c2b25ebe9477ec810b5683808573f5830b485d",
+    "unreferenced_image_count": 0
+}

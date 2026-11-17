@@ -1,0 +1,3 @@
+2026-11-14T18:01:34.981302+00:00 | INFO | Manual review of 20261114T173913Z_87fe4ccf
+INFO | Kept correctly labeled four of spades; excluded mislabeled duplicate
+SUCCESS | 6071 retained, 1 removed, 0 review; retained exact pixel hashes unique

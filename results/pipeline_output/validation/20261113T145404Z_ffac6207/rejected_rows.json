@@ -1,0 +1,14 @@
+[
+    {
+        "class_index": 0,
+        "issues": [
+            {
+                "code": "missing_file",
+                "message": "The referenced image failed file validation with reason: missing_file."
+            }
+        ],
+        "original_path": "train/ace of clubs/output",
+        "row_number": 122,
+        "status": "rejected"
+    }
+]

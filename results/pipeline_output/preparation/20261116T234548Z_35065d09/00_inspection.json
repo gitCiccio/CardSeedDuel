@@ -1,0 +1,105 @@
+{
+    "anomalies": {
+        "csv_paths_without_scanned_image": [
+            "train/ace of clubs/output"
+        ],
+        "rows_without_path": 0,
+        "scanned_images_without_csv_reference": []
+    },
+    "dataset_root": "data/raw",
+    "filesystem": {
+        "image_file_count": 8154,
+        "image_files_by_split": {
+            "test": 265,
+            "train": 7624,
+            "valid": 265
+        }
+    },
+    "images": {
+        "color_modes": {
+            "RGB": 8154
+        },
+        "dimensions": {
+            "224x224": 8154
+        },
+        "formats": {
+            "JPEG": 8154
+        },
+        "inspected_file_count": 8154,
+        "readable_image_count": 8154,
+        "readable_images_by_split": {
+            "test": 265,
+            "train": 7624,
+            "valid": 265
+        },
+        "unreadable_image_count": 0,
+        "unreadable_images": []
+    },
+    "inspection_scope": "csv_metadata_filesystem_and_image_properties",
+    "metadata": {
+        "distinct_class_count": 53,
+        "row_count": 8155,
+        "rows_by_class": {
+            "ace of clubs": 131,
+            "ace of diamonds": 139,
+            "ace of hearts": 181,
+            "ace of spades": 191,
+            "eight of clubs": 148,
+            "eight of diamonds": 169,
+            "eight of hearts": 162,
+            "eight of spades": 145,
+            "five of clubs": 160,
+            "five of diamonds": 148,
+            "five of hearts": 146,
+            "five of spades": 168,
+            "four of clubs": 167,
+            "four of diamonds": 124,
+            "four of hearts": 164,
+            "four of spades": 150,
+            "jack of clubs": 181,
+            "jack of diamonds": 170,
+            "jack of hearts": 178,
+            "jack of spades": 182,
+            "joker": 125,
+            "king of clubs": 138,
+            "king of diamonds": 145,
+            "king of hearts": 135,
+            "king of spades": 161,
+            "nine of clubs": 134,
+            "nine of diamonds": 139,
+            "nine of hearts": 143,
+            "nine of spades": 164,
+            "queen of clubs": 171,
+            "queen of diamonds": 173,
+            "queen of hearts": 149,
+            "queen of spades": 172,
+            "seven of clubs": 118,
+            "seven of diamonds": 134,
+            "seven of hearts": 153,
+            "seven of spades": 175,
+            "six of clubs": 162,
+            "six of diamonds": 149,
+            "six of hearts": 137,
+            "six of spades": 168,
+            "ten of clubs": 151,
+            "ten of diamonds": 161,
+            "ten of hearts": 139,
+            "ten of spades": 168,
+            "three of clubs": 136,
+            "three of diamonds": 163,
+            "three of hearts": 123,
+            "three of spades": 152,
+            "two of clubs": 140,
+            "two of diamonds": 143,
+            "two of hearts": 165,
+            "two of spades": 165
+        },
+        "rows_by_split": {
+            "test": 265,
+            "train": 7625,
+            "valid": 265
+        },
+        "source": "data/raw/cards.csv"
+    },
+    "schema_version": 1
+}

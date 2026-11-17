@@ -27,7 +27,7 @@ La traccia usa l'espressione "ASP rules": nell'implementazione DeepProbLog i fil
 Neurosymbolic_project/
 |-- README.md
 |-- .gitignore
-|-- requirements.txt                # attualmente vuoto: dipendenze da definire e verificare
+|-- requirements.txt                # installa il package e le dipendenze da pyproject.toml
 |-- configs/                        # configurazioni riproducibili degli esperimenti
 |-- data/                           # dati locali, separati dal codice
 |   |-- raw/
@@ -92,4 +92,68 @@ Le percentuali nei nomi sono indicazioni del distributore: non sono misure otten
 3. Baseline: modello a due immagini con predizione diretta dell'esito.
 4. Esperimenti: protocollo comune, metriche, tempi, grafici e raccolta risultati.
 
-Integrazione, revisione e presentazione sono condivise. Lo scheletro attuale documenta l'organizzazione: dipendenze, training, valutazione e download automatico devono ancora essere implementati e verificati.
+Integrazione, revisione e presentazione sono condivise. La preparazione dati e il loader condiviso sono implementati e verificati. Training, integrazione dei modelli, valutazione delle loro prestazioni e download automatico restano da realizzare.
+
+
+## Installazione ed esecuzione della preparazione dati
+
+Richiede Python 3.11 o superiore (compatibile con Pillow 13.0.0). Nella radice del repository, creare un ambiente
+virtuale con un interprete valido e attivarlo. Quindi:
+
+```bash
+python -m pip install -r requirements.txt
+python -m unittest discover -s tests -p "test_*.py" -v
+python scripts/inspect_dataset.py
+```
+
+`requirements.txt` richiama l'installazione editable del progetto; dipendenze e
+package dentro `src/` sono dichiarati in `pyproject.toml`. Non occorre impostare
+PYTHONPATH o Sources Root per eseguire il codice dopo l'installazione nello stesso
+ambiente. Installare nuovamente se cambiano dipendenze o metadati del package.
+
+È disponibile anche `card-inspect --project-root /percorso/del/progetto`.
+Senza l'opzione, il comando usa la directory corrente come radice.
+
+Lo script in `scripts/` è solo il punto di ingresso. Le funzioni riutilizzabili
+sono in `card_suit_duel.data.inspection`: ricevono percorsi espliciti e non
+configurano il logger. `run_inspection()` restituisce il report senza scriverlo;
+`save_report()` lo salva. I dati originali restano invariati.
+
+Per il contratto dei metadati vedere [docs/dataset_schema.md](docs/dataset_schema.md).
+Per il dettaglio della riorganizzazione vedere [docs/review_fixes.md](docs/review_fixes.md).
+
+
+## Preparazione completa e loader (F2.9/F2.10)
+
+Le immagini e i CSV sono versionati per scelta del gruppo. Pesi .h5,
+checkpoint, ambienti e credenziali restano esclusi. I recap di lavoro sono
+in `work_sessions/` e le motivazioni delle scelte in [CHANGELOG.md](CHANGELOG.md).
+
+Un solo comando ricostruisce gli indici dal raw già disponibile:
+
+```text
+python scripts/prepare_dataset.py --config configs/preparation.json
+```
+
+La configurazione versiona percorsi, quantità e seed; le decisioni visuali
+sono in `configs/duplicate_review_decisions.json`. Ogni esecuzione crea un
+nuovo run. Confrontare `reproducibility.json` per verificare gli stessi
+contenuti, non i timestamp dei report operativi.
+
+Due preparazioni complete hanno riprodotto tutti i nove CSV approvati.
+Il loader PyTorch è stato verificato integralmente per 20/50/100%, con
+valid/test fissi. L’adattatore DeepProbLog e i modelli restano in F3A/F3B.
+La riproduzione di un compagno su clone pulito è ancora da attestare.
+
+- [Procedura F2.10 e controlli pendenti](docs/F2_10_RIPRODUCIBILITA.md)
+- [Configurazione CPU per preprocessing e loader](docs/F2_9_AMBIENTE_NEURALE.md)
+- [Evidenza dei run riprodotti](docs/F2_10_VERIFICA_LOCALE.json)
+- [Evidenza dei loader completi](docs/F2_9_VERIFICA_COMPLETA.json)
+
+Installare l’extra `neural` prima di eseguire i test PyTorch: senza le
+dipendenze opzionali i test neurali sono saltati, non verificati.
+
+
+Per il perimetro dell’ultimo commit, i comandi di verifica e il passaggio
+di consegne al team, vedere [CHANGES.md](CHANGES.md). Il registro completo
+delle decisioni F2.1–F2.10 è in [CHANGELOG.md](CHANGELOG.md).
