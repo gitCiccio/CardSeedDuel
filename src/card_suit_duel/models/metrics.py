@@ -1,0 +1,118 @@
+"""Evaluation metrics and parameter counting for duel classification models."""
+
+from collections.abc import Sequence
+from typing import Any
+
+from torch import Tensor, nn
+
+from card_suit_duel.data.mapping.mappings import OUTCOME_DOMAIN
+from card_suit_duel.exceptions import CardSuitDuelError
+
+
+def count_trainable_parameters(model: nn.Module) -> int:
+    """Return the total number of trainable scalar parameters in a PyTorch module."""
+    if not isinstance(model, nn.Module):
+        raise CardSuitDuelError("model must be an nn.Module instance.")
+    return sum(param.numel() for param in model.parameters() if param.requires_grad)
+
+
+def _to_index_list(values: Sequence[int] | Tensor, *, name: str, num_classes: int) -> list[int]:
+    """Convert a 1D tensor or sequence of class indices into a validated list of ints."""
+    if isinstance(values, Tensor):
+        if values.ndim != 1:
+            raise CardSuitDuelError(f"{name} tensor must be 1D; received shape {tuple(values.shape)}.")
+        raw_list = values.detach().cpu().tolist()
+    elif isinstance(values, Sequence) and not isinstance(values, (str, bytes)):
+        raw_list = list(values)
+    else:
+        raise CardSuitDuelError(f"{name} must be a 1D Tensor or sequence of integers.")
+
+    result: list[int] = []
+    for item in raw_list:
+        if isinstance(item, bool) or not isinstance(item, int) or not 0 <= item < num_classes:
+            raise CardSuitDuelError(
+                f"Invalid class index {item!r} in {name}; expected int in [0, {num_classes - 1}]."
+            )
+        result.append(item)
+    return result
+
+
+def compute_confusion_matrix(
+    predictions: Sequence[int] | Tensor,
+    targets: Sequence[int] | Tensor,
+    *,
+    num_classes: int = len(OUTCOME_DOMAIN),
+) -> list[list[int]]:
+    """Build a [num_classes, num_classes] confusion matrix (rows=target, cols=pred)."""
+    if isinstance(num_classes, bool) or not isinstance(num_classes, int) or num_classes <= 0:
+        raise CardSuitDuelError("num_classes must be a positive integer.")
+
+    pred_list = _to_index_list(predictions, name="predictions", num_classes=num_classes)
+    target_list = _to_index_list(targets, name="targets", num_classes=num_classes)
+
+    if len(pred_list) != len(target_list):
+        raise CardSuitDuelError(
+            f"predictions and targets must have equal length; received {len(pred_list)} and {len(target_list)}."
+        )
+    if not pred_list:
+        raise CardSuitDuelError("Cannot compute metrics on empty predictions.")
+
+    matrix = [[0 for _ in range(num_classes)] for _ in range(num_classes)]
+    for target_idx, pred_idx in zip(target_list, pred_list):
+        matrix[target_idx][pred_idx] += 1
+    return matrix
+
+
+def compute_classification_metrics(
+    predictions: Sequence[int] | Tensor,
+    targets: Sequence[int] | Tensor,
+    *,
+    class_names: Sequence[str] = OUTCOME_DOMAIN,
+) -> dict[str, Any]:
+    """Compute accuracy, macro-precision, macro-recall, macro-F1 and confusion matrix."""
+    if not class_names:
+        raise CardSuitDuelError("class_names cannot be empty.")
+
+    num_classes = len(class_names)
+    matrix = compute_confusion_matrix(predictions, targets, num_classes=num_classes)
+    total = sum(sum(row) for row in matrix)
+    correct = sum(matrix[i][i] for i in range(num_classes))
+    accuracy = correct / total
+
+    per_class: dict[str, dict[str, float | int]] = {}
+    precisions: list[float] = []
+    recalls: list[float] = []
+    f1_scores: list[float] = []
+
+    for idx, name in enumerate(class_names):
+        tp = matrix[idx][idx]
+        support = sum(matrix[idx])
+        predicted_positive = sum(matrix[row][idx] for row in range(num_classes))
+
+        precision = tp / predicted_positive if predicted_positive > 0 else 0.0
+        recall = tp / support if support > 0 else 0.0
+        f1 = (
+            2.0 * precision * recall / (precision + recall)
+            if (precision + recall) > 0.0
+            else 0.0
+        )
+
+        precisions.append(precision)
+        recalls.append(recall)
+        f1_scores.append(f1)
+        per_class[name] = {
+            "precision": precision,
+            "recall": recall,
+            "f1": f1,
+            "support": support,
+        }
+
+    return {
+        "sample_count": total,
+        "accuracy": accuracy,
+        "macro_precision": sum(precisions) / num_classes,
+        "macro_recall": sum(recalls) / num_classes,
+        "macro_f1": sum(f1_scores) / num_classes,
+        "per_class": per_class,
+        "confusion_matrix": matrix,
+    }
