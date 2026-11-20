@@ -1,8 +1,11 @@
-"""Evaluation metrics and parameter counting for duel classification models."""
+"""Evaluation metrics, hardware reporting and parameter counting for duel models."""
 
+import os
+import platform
 from collections.abc import Sequence
 from typing import Any
 
+import torch
 from torch import Tensor, nn
 
 from card_suit_duel.data.mapping.mappings import OUTCOME_DOMAIN
@@ -14,6 +17,29 @@ def count_trainable_parameters(model: nn.Module) -> int:
     if not isinstance(model, nn.Module):
         raise CardSuitDuelError("model must be an nn.Module instance.")
     return sum(param.numel() for param in model.parameters() if param.requires_grad)
+
+
+def collect_hardware_info(device: str | torch.device = "cpu") -> dict[str, Any]:
+    """Collect CPU, thread, PyTorch and GPU metadata for timing comparisons."""
+    target_device = torch.device(device)
+    cuda_available = bool(torch.cuda.is_available())
+    gpu_name: str | None = None
+    if cuda_available:
+        gpu_index = 0 if target_device.index is None else target_device.index
+        gpu_name = torch.cuda.get_device_name(gpu_index)
+
+    return {
+        "device": str(target_device),
+        "platform": platform.platform(),
+        "processor": platform.processor(),
+        "python_version": platform.python_version(),
+        "cpu_count": os.cpu_count(),
+        "torch_num_threads": torch.get_num_threads(),
+        "torch_version": torch.__version__,
+        "cuda_available": cuda_available,
+        "cuda_version": torch.version.cuda,
+        "gpu_name": gpu_name,
+    }
 
 
 def _to_index_list(values: Sequence[int] | Tensor, *, name: str, num_classes: int) -> list[int]:

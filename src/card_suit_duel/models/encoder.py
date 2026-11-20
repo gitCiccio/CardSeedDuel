@@ -1,8 +1,9 @@
-"""LeNet-style convolutional feature extractor faithful to Lab 03."""
+"""LeNet-style convolutional encoder and SuitNet faithful to Lab 03."""
 
 import torch
 from torch import Tensor, nn
 
+from card_suit_duel.data.mapping.definitions import SUIT_CLASSES
 from card_suit_duel.exceptions import CardSuitDuelError
 
 
@@ -39,6 +40,8 @@ class CardEncoder(nn.Module):
     Applies the Lab 03 normalization (pixel - 0.5) / 0.5 to center inputs in [-1, 1],
     followed by two 5x5 convolutional + 2x2 max-pooling stages (3 -> 6 -> 16 channels)
     and adaptive pooling to 4x4 so the flattened vector has size 16 * 4 * 4 = 256.
+    Both Approach A (SuitNet) and Approach B (BaselineDuelNet) use this exact
+    encoder class so visual capacity and normalization are identical.
     """
 
     def __init__(self, *, feature_dim: int = 16 * 4 * 4) -> None:
@@ -70,3 +73,64 @@ class CardEncoder(nn.Module):
         x = self.encoder(x)
         x = x.view(-1, self.size)
         return self.projection(x)
+
+
+class SuitClassifier(nn.Module):
+    """Fully-connected MLP head (256 -> 120 -> 84 -> 3) with Softmax(dim=1), as in Lab 03."""
+
+    def __init__(self, n: int = len(SUIT_CLASSES), size: int = 16 * 4 * 4) -> None:
+        super().__init__()
+        _require_positive_int(n, name="n")
+        _require_positive_int(size, name="size")
+
+        self.classifier = nn.Sequential(
+            nn.Linear(size, 120),
+            nn.ReLU(),
+            nn.Linear(120, 84),
+            nn.ReLU(),
+            nn.Linear(84, n),
+        )
+        self.softmax = nn.Softmax(dim=1)
+
+    def forward(self, x: Tensor) -> Tensor:
+        """Map flattened features [B, size] to suit probabilities [B, n]."""
+        x = self.classifier(x)
+        return self.softmax(x)
+
+
+class SuitNet(nn.Module):
+    """Single-card suit network for Approach A (DeepProbLog), faithful to MNIST_Net (Lab 03).
+
+    Combines the shared CardEncoder (256 features with [-1, 1] normalization) and
+    SuitClassifier (256 -> 120 -> 84 -> 3 + Softmax(dim=1)) over SUIT_CLASSES
+    (hearts, clubs, spades).
+    """
+
+    def __init__(
+        self,
+        *,
+        feature_dim: int = 16 * 4 * 4,
+        encoder: CardEncoder | None = None,
+    ) -> None:
+        super().__init__()
+        if encoder is not None and not isinstance(encoder, CardEncoder):
+            raise CardSuitDuelError("encoder must be a CardEncoder instance or None.")
+
+        self.encoder = (
+            encoder
+            if encoder is not None
+            else CardEncoder(feature_dim=feature_dim)
+        )
+        self.size = self.encoder.feature_dim
+        self.classifier = SuitClassifier(n=len(SUIT_CLASSES), size=self.size)
+
+    def forward(self, x: Tensor) -> Tensor:
+        """Return suit probabilities [B, 3] ordered as (hearts, clubs, spades).
+
+        Accepts either batched [B, 3, H, W] tensors (batching=True in DeepProbLog)
+        or a single unbatched [3, H, W] image tensor.
+        """
+        if isinstance(x, Tensor) and x.ndim == 3:
+            x = x.unsqueeze(0)
+        features = self.encoder(x)
+        return self.classifier(features)

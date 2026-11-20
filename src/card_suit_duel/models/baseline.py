@@ -1,4 +1,4 @@
-"""Purely neural baseline model (Approach B) following Lab 01 and Lab 03 structures."""
+"""Purely neural baseline model (Approach B) following Lab 03's CNN+MLP structure."""
 
 import torch
 from torch import Tensor, nn
@@ -25,14 +25,14 @@ def _require_dropout(dropout: float) -> None:
 
 
 class BaselineDuelNet(nn.Module):
-    """End-to-end neural network predicting duel outcomes from two card images.
+    """End-to-end Siamese neural network predicting duel outcomes from two card images.
 
-    Follows the exact modular structure of the course labs:
+    Reuses the exact same CardEncoder backbone as SuitNet (Approach A):
     1. Shared LeNet-style CardEncoder (Lab 03: Conv2d(3,6,5) -> MaxPool -> ReLU ->
        Conv2d(6,16,5) -> MaxPool -> ReLU -> 16*4*4 = 256 features per card).
     2. Concatenation of the two card feature vectors [x1, x2] (512 features).
-    3. Deep MLP classifier head (Lab 01 / Lab 03 style: 512 -> 120 -> ReLU ->
-       84 -> ReLU -> 3 outcome logits for CrossEntropyLoss).
+    3. MLP classifier head following the Lab 03 hidden widths (512 -> 120 -> ReLU ->
+       84 -> ReLU -> 3 outcome logits for nn.CrossEntropyLoss).
     """
 
     def __init__(

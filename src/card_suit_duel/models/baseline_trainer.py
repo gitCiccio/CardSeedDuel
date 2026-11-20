@@ -1,4 +1,4 @@
-"""Five-step PyTorch training, in-memory image caching and evaluation loops."""
+"""Five-step PyTorch training, shared image tensor caching and evaluation loops."""
 
 import copy
 import time
@@ -12,10 +12,13 @@ from PIL import Image
 from torch import Tensor, nn
 from torch.optim import Optimizer
 
+from card_suit_duel.data.image_io import load_card_image
 from card_suit_duel.data.mapping.schema import CardImage
 from card_suit_duel.data.pairs.pair_dataset import CardPairDataset
 from card_suit_duel.data.pairs.schema import CardPair
-from card_suit_duel.exceptions import CardSuitDuelError
+from card_suit_duel.data.path_checks import resolve_dataset_root
+from card_suit_duel.data.preprocessing import build_image_transform
+from card_suit_duel.exceptions import CardSuitDuelError, MetadataError
 from card_suit_duel.models.baseline import BaselineDuelNet
 from card_suit_duel.models.metrics import (
     compute_classification_metrics,
@@ -23,12 +26,85 @@ from card_suit_duel.models.metrics import (
 )
 
 
-class CachedCardPairDataset(CardPairDataset):
-    """CardPairDataset that caches decoded and transformed card tensors in RAM.
+def _sync_device(device: torch.device) -> None:
+    """Synchronize CUDA stream before timing boundaries so GPU timings are exact."""
+    if device.type == "cuda" and torch.cuda.is_available():
+        torch.cuda.synchronize(device)
 
-    Since many duel pairs reuse the same underlying cards across an epoch
-    (e.g. 3,000 validation pairs come from only 195 unique images), caching
-    each transformed tensor by image_id eliminates redundant disk I/O.
+
+def _require_cached_tensor(value: Tensor) -> None:
+    """Validate that a transformed tensor matches the [3, H, W] float32 contract."""
+    if not isinstance(value, Tensor):
+        raise MetadataError("The image transform must return a PyTorch tensor.")
+    if value.ndim != 3 or value.shape[0] != 3:
+        raise MetadataError("Expected an image tensor with shape [3, H, W].")
+    if value.dtype != torch.float32:
+        raise MetadataError("Expected an image tensor with dtype float32.")
+
+
+class CardTensorCache:
+    """Reusable in-memory cache of decoded and transformed card tensors.
+
+    Shared between Approach A (DeepProbLog CardImages) and Approach B
+    (CachedCardPairDataset) so both approaches perform identical decoding,
+    resizing and pre-warming outside the timed training loop.
+    """
+
+    def __init__(
+        self,
+        dataset_root: Path,
+        *,
+        transform: Callable[[Image.Image], Tensor] | None = None,
+    ) -> None:
+        self._dataset_root = resolve_dataset_root(dataset_root)
+        self._transform = (
+            build_image_transform()
+            if transform is None
+            else transform
+        )
+        if not callable(self._transform):
+            raise MetadataError("The image transform must be callable.")
+        self._tensors: dict[str, Tensor] = {}
+
+    @property
+    def dataset_root(self) -> Path:
+        return self._dataset_root
+
+    @property
+    def transform(self) -> Callable[[Image.Image], Tensor]:
+        return self._transform
+
+    def __len__(self) -> int:
+        return len(self._tensors)
+
+    def __contains__(self, image_id: str) -> bool:
+        return image_id in self._tensors
+
+    def get(self, card: CardImage) -> Tensor:
+        """Return the cached [3, H, W] float32 tensor for card, loading it once if needed."""
+        cached = self._tensors.get(card.image_id)
+        if cached is not None:
+            return cached
+        with load_card_image(card, self._dataset_root) as image:
+            tensor = self._transform(image)
+        _require_cached_tensor(tensor)
+        self._tensors[card.image_id] = tensor
+        return tensor
+
+    def prewarm(self, cards: Iterable[CardImage]) -> float:
+        """Decode and cache all unique cards in advance; return elapsed seconds."""
+        start_time = time.perf_counter()
+        for card in cards:
+            if card.image_id not in self._tensors:
+                self.get(card)
+        return time.perf_counter() - start_time
+
+
+class CachedCardPairDataset(CardPairDataset):
+    """CardPairDataset backed by a pre-warmable in-memory tensor cache.
+
+    Call prewarm_cache() before training so epoch timings reflect only
+    forward/backward/update computation rather than disk image decoding.
     """
 
     def __init__(
@@ -37,23 +113,39 @@ class CachedCardPairDataset(CardPairDataset):
         dataset_root: Path,
         *,
         transform: Callable[[Image.Image], Tensor] | None = None,
-        shared_cache: dict[str, Tensor] | None = None,
+        tensor_cache: CardTensorCache | None = None,
     ) -> None:
-        super().__init__(pairs, dataset_root, transform=transform)
-        self._cache: dict[str, Tensor] = {} if shared_cache is None else shared_cache
+        resolved_transform = (
+            tensor_cache.transform
+            if tensor_cache is not None and transform is None
+            else transform
+        )
+        super().__init__(pairs, dataset_root, transform=resolved_transform)
+        self._tensor_cache = (
+            CardTensorCache(dataset_root, transform=self._transform)
+            if tensor_cache is None
+            else tensor_cache
+        )
 
     @property
     def cached_image_count(self) -> int:
         """Return the number of unique card tensors currently cached in memory."""
-        return len(self._cache)
+        return len(self._tensor_cache)
+
+    def unique_cards(self) -> tuple[CardImage, ...]:
+        """Return all unique CardImage objects referenced by this dataset."""
+        seen: dict[str, CardImage] = {}
+        for pair in self._pairs:
+            seen.setdefault(pair.first_card.image_id, pair.first_card)
+            seen.setdefault(pair.second_card.image_id, pair.second_card)
+        return tuple(seen.values())
+
+    def prewarm_cache(self) -> float:
+        """Decode and cache every unique card referenced by this dataset."""
+        return self._tensor_cache.prewarm(self.unique_cards())
 
     def _load_tensor(self, card: CardImage) -> Tensor:
-        cached = self._cache.get(card.image_id)
-        if cached is not None:
-            return cached
-        tensor = super()._load_tensor(card)
-        self._cache[card.image_id] = tensor
-        return tensor
+        return self._tensor_cache.get(card)
 
 
 def _iter_batches(loader: Iterable[dict[str, Any]], max_batches: int | None):
@@ -88,6 +180,7 @@ def train_one_epoch(
     all_targets: list[int] = []
     batch_count = 0
 
+    _sync_device(target_device)
     start_time = time.perf_counter()
 
     for batch in _iter_batches(loader, max_batches):
@@ -113,6 +206,7 @@ def train_one_epoch(
         all_targets.extend(targets.detach().cpu().tolist())
         batch_count += 1
 
+    _sync_device(target_device)
     elapsed = time.perf_counter() - start_time
     if batch_count == 0 or not all_targets:
         raise CardSuitDuelError("Training loader produced no batches.")
@@ -148,6 +242,7 @@ def evaluate_baseline(
     all_targets: list[int] = []
     batch_count = 0
 
+    _sync_device(target_device)
     start_time = time.perf_counter()
 
     with torch.no_grad():
@@ -166,6 +261,7 @@ def evaluate_baseline(
             all_targets.extend(targets.cpu().tolist())
             batch_count += 1
 
+    _sync_device(target_device)
     elapsed = time.perf_counter() - start_time
     if batch_count == 0 or not all_targets:
         raise CardSuitDuelError("Evaluation loader produced no batches.")
