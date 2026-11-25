@@ -15,6 +15,12 @@ neural = [
     "torch==2.15.0",
     "torchvision==0.29.2",
 ]
+neurosymbolic = [
+    "torch==2.15.0",
+    "torchvision==0.29.2",
+    "deepproblog==2.1.0",
+    "problog==2.3.0",
+]
 
 [project.scripts]
 card-inspect = "card_suit_duel.data.inspection:main"
