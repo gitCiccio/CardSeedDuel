@@ -2,7 +2,7 @@
 
 import copy
 import time
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from itertools import islice
 from pathlib import Path
 from typing import Any
@@ -22,6 +22,7 @@ from card_suit_duel.exceptions import CardSuitDuelError, MetadataError
 from card_suit_duel.models.baseline import BaselineDuelNet
 from card_suit_duel.models.metrics import (
     compute_classification_metrics,
+    compute_suit_pair_accuracy,
     count_trainable_parameters,
 )
 
@@ -30,6 +31,15 @@ def _sync_device(device: torch.device) -> None:
     """Synchronize CUDA stream before timing boundaries so GPU timings are exact."""
     if device.type == "cuda" and torch.cuda.is_available():
         torch.cuda.synchronize(device)
+
+
+def build_pair_suit_lookup(pairs: Sequence[CardPair]) -> dict[str, tuple[str, str]]:
+    """Map pair_id to (first_suit, second_suit) for post-hoc evaluation diagnostics."""
+    return {
+        pair.pair_id: (pair.first_card.suit.value, pair.second_card.suit.value)
+        for pair in pairs
+        if pair.first_card.suit is not None and pair.second_card.suit is not None
+    }
 
 
 def _require_cached_tensor(value: Tensor) -> None:
@@ -227,8 +237,13 @@ def evaluate_baseline(
     *,
     device: str | torch.device = "cpu",
     max_batches: int | None = None,
+    pair_suit_lookup: Mapping[str, tuple[str, str]] | None = None,
 ) -> dict[str, Any]:
-    """Evaluate a baseline model with gradients disabled."""
+    """Evaluate a baseline model with gradients disabled.
+
+    When pair_suit_lookup is provided and batches contain 'pair_id', also
+    computes post-hoc accuracy broken down across the 9 ordered suit pairs.
+    """
     if not isinstance(model, nn.Module):
         raise CardSuitDuelError("model must be an nn.Module instance.")
 
@@ -240,6 +255,7 @@ def evaluate_baseline(
     total_loss = 0.0
     all_predictions: list[int] = []
     all_targets: list[int] = []
+    all_suit_pairs: list[tuple[str, str]] = []
     batch_count = 0
 
     _sync_device(target_device)
@@ -259,6 +275,8 @@ def evaluate_baseline(
             predictions = torch.argmax(logits, dim=1)
             all_predictions.extend(predictions.cpu().tolist())
             all_targets.extend(targets.cpu().tolist())
+            if pair_suit_lookup is not None and "pair_id" in batch:
+                all_suit_pairs.extend(pair_suit_lookup[pid] for pid in batch["pair_id"])
             batch_count += 1
 
     _sync_device(target_device)
@@ -267,12 +285,20 @@ def evaluate_baseline(
         raise CardSuitDuelError("Evaluation loader produced no batches.")
 
     metrics = compute_classification_metrics(all_predictions, all_targets)
-    return {
+    result: dict[str, Any] = {
         "loss": total_loss / len(all_targets),
         "batch_count": batch_count,
         "elapsed_seconds": elapsed,
+        "ms_per_pair": (elapsed * 1000.0) / len(all_targets),
         **metrics,
     }
+    if all_suit_pairs and len(all_suit_pairs) == len(all_targets):
+        result["per_suit_combination"] = compute_suit_pair_accuracy(
+            all_predictions,
+            all_targets,
+            all_suit_pairs,
+        )
+    return result
 
 
 def fit_baseline(
@@ -283,17 +309,26 @@ def fit_baseline(
     epochs: int = 5,
     lr: float = 1e-3,
     weight_decay: float = 0.0,
+    patience: int | None = None,
     device: str | torch.device = "cpu",
     max_train_batches: int | None = None,
     max_valid_batches: int | None = None,
+    valid_pair_suit_lookup: Mapping[str, tuple[str, str]] | None = None,
 ) -> dict[str, Any]:
-    """Train BaselineDuelNet across epochs and restore the best validation checkpoint."""
+    """Train BaselineDuelNet across epochs and restore the best validation checkpoint.
+
+    Early stopping is disabled by default (patience=None). When patience is set
+    to a positive integer, training stops if validation Macro-F1 (tie-broken on
+    lower validation loss) does not improve for that many consecutive epochs.
+    """
     if isinstance(epochs, bool) or not isinstance(epochs, int) or epochs <= 0:
         raise CardSuitDuelError(f"epochs must be a positive integer; received {epochs!r}.")
     if isinstance(lr, bool) or not isinstance(lr, (int, float)) or float(lr) <= 0.0:
         raise CardSuitDuelError(f"lr must be a positive number; received {lr!r}.")
     if isinstance(weight_decay, bool) or not isinstance(weight_decay, (int, float)) or float(weight_decay) < 0.0:
         raise CardSuitDuelError(f"weight_decay must be a non-negative number; received {weight_decay!r}.")
+    if patience is not None and (isinstance(patience, bool) or not isinstance(patience, int) or patience <= 0):
+        raise CardSuitDuelError(f"patience must be None or a positive integer; received {patience!r}.")
 
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(
@@ -306,8 +341,11 @@ def fit_baseline(
     best_epoch = 1
     best_valid_macro_f1 = -1.0
     best_valid_loss = float("inf")
+    best_valid_metrics: dict[str, Any] | None = None
     best_state_dict: dict[str, Any] | None = None
     total_train_seconds = 0.0
+    epochs_without_improvement = 0
+    stopped_early = False
 
     for epoch in range(1, epochs + 1):
         train_metrics = train_one_epoch(
@@ -324,19 +362,25 @@ def fit_baseline(
             criterion,
             device=device,
             max_batches=max_valid_batches,
+            pair_suit_lookup=valid_pair_suit_lookup,
         )
 
         total_train_seconds += train_metrics["elapsed_seconds"]
         valid_f1 = valid_metrics["macro_f1"]
         valid_loss = valid_metrics["loss"]
 
-        if (valid_f1 > best_valid_macro_f1) or (
+        improved = (valid_f1 > best_valid_macro_f1) or (
             valid_f1 == best_valid_macro_f1 and valid_loss < best_valid_loss
-        ):
+        )
+        if improved:
             best_valid_macro_f1 = valid_f1
             best_valid_loss = valid_loss
             best_epoch = epoch
+            best_valid_metrics = valid_metrics
             best_state_dict = copy.deepcopy(model.state_dict())
+            epochs_without_improvement = 0
+        else:
+            epochs_without_improvement += 1
 
         history.append(
             {
@@ -346,14 +390,22 @@ def fit_baseline(
             }
         )
 
+        if patience is not None and epochs_without_improvement >= patience:
+            stopped_early = True
+            break
+
     if best_state_dict is not None:
         model.load_state_dict(best_state_dict)
 
     return {
         "epochs": epochs,
+        "epochs_completed": len(history),
+        "patience": patience,
+        "stopped_early": stopped_early,
         "best_epoch": best_epoch,
         "best_valid_macro_f1": best_valid_macro_f1,
         "best_valid_loss": best_valid_loss,
+        "best_valid_metrics": best_valid_metrics,
         "total_training_seconds": total_train_seconds,
         "trainable_parameters": count_trainable_parameters(model),
         "history": history,
