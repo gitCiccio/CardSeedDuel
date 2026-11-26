@@ -22,10 +22,10 @@ CardSeedDuel/
 |   |-- __init__.py            # Esportazione pubblica di encoder, SuitNet, BaselineDuelNet, cache, trainer e metriche
 |   |-- encoder.py             # CardEncoder (CNN stile Lab 03) + SuitClassifier e SuitNet (256->120->84->3 + Softmax) per Approccio A
 |   |-- baseline.py            # Architettura siamese a due carte (BaselineDuelNet) per Approccio B
-|   |-- baseline_trainer.py    # CardTensorCache condivisa, CachedCardPairDataset + loop a 5 passi con sync CUDA
-|   `-- metrics.py             # Accuracy, Macro-F1, Confusion Matrix, conteggio parametri e collect_hardware_info()
+|   |-- baseline_trainer.py    # CardTensorCache condivisa, CachedCardPairDataset + loop a 5 passi, sync CUDA, early stopping opzionale
+|   `-- metrics.py             # Accuracy, Macro-F1, Confusion Matrix, diagnostica 9 semi, aggregazione multi-seed e collect_hardware_info()
 |-- scripts/
-|   `-- train_baseline.py      # Script CLI (--evaluate-test OFF di default, pre-warm cache, blocco hardware)
+|   `-- train_baseline.py      # Script CLI (--evaluate-test OFF di default, --seeds, --patience, pre-warm cache, blocco hardware)
 |-- tests/
 |   `-- test_baseline.py       # Test unitari su architetture, SuitNet, cache, hardware, metriche e trainer
 `-- docs/
@@ -72,9 +72,10 @@ flowchart LR
 * In questo modo `elapsed_seconds` di ogni epoca e `total_training_seconds` misurano **solo forward, backward e aggiornamento pesi**, senza l'overhead di decodifica JPEG nella prima epoca.
 * Se `device` è `cuda`, `_sync_device()` invoca **`torch.cuda.synchronize(device)`** prima e dopo la misura temporale.
 
-### 4.2 Blocco `hardware` e Metriche (`metrics.py`)
+### 4.2 Blocco `hardware`, Diagnostica e Metriche (`metrics.py`)
 * `collect_hardware_info(device)` registra nel `summary.json`: `device`, `platform`, `processor`, `python_version`, `cpu_count`, `torch_num_threads`, `torch_version`, `cuda_available`, `cuda_version` e `gpu_name`.
-* `compute_classification_metrics` e `count_trainable_parameters` sono riutilizzabili identici da Approccio A e B.
+* `compute_classification_metrics`, `compute_suit_pair_accuracy` (diagnostica post-hoc sulle 9 combinazioni di semi senza mai esporre i semi al training), `aggregate_metric_runs` (media/std multi-seed), `ms_per_pair` (velocità di inferenza) e `count_trainable_parameters` sono riutilizzabili identici da Approccio A e B.
+* `fit_baseline` supporta anche `patience: int | None = None` (early stopping opzionale, disattivato di default).
 
 ---
 
@@ -89,7 +90,11 @@ flowchart LR
 
 ### Tuning / sviluppo (solo `train` e `valid`, test NON toccato)
 ```powershell
+# Singolo seed
 .venv\Scripts\python.exe scripts\train_baseline.py --percentage 20 --image-size 64 --epochs 25 --batch-size 64 --lr 0.001 --seed 42
+
+# Multi-seed con riepilogo media +/- std e diagnostica 9 combinazioni di semi
+.venv\Scripts\python.exe scripts\train_baseline.py --percentage 20 --seeds 0 1 2 --image-size 64 --epochs 25 --batch-size 64 --lr 0.001
 ```
 
 ### Valutazione finale (una sola volta, a configurazione concordata con Approccio A)
@@ -101,8 +106,14 @@ flowchart LR
 
 ---
 
-## 6. Stato degli Esperimenti (20% / 50% / 100%)
+## 6. Stato degli Esperimenti (20% / 50% / 100%, solo Validation)
 
-Le osservazioni preliminari su **`valid`** (con `image_size=64×64`, `batch_size=64`, `lr=0.001`, `25` epoche) mostrano una curva di apprendimento a due gradini (uscita dal punto di sella $\ln(3) \approx 1.0986$ → separazione Rosso/Nero attorno al `~51%` → separazione Fiori/Picche e regola ciclica fino a **`0.7707` Valid Macro-F1** sul 20% e **`0.8516` Valid Macro-F1** sul 50%).
+Tutti i run esplorativi riportati finora hanno mantenuto **`test_evaluated: false`** (test set mai toccato, `image_size=64×64`, `batch_size=64`, `lr=0.001`, CPU):
 
-I **risultati finali sul test set** e i tempi puliti (`cache_seconds` separato da `total_training_seconds`, con blocco `hardware`) verranno eseguiti e registrati **una sola volta** sui tre subset **`20% / 50% / 100%`** dopo aver concordato il numero di epoche e la risoluzione definitiva con l'Approccio A.
+| Frazione Train | Configurazione esplorativa | Best Valid Macro-F1 | Note tempi / diagnostica |
+| :---: | :--- | :---: | :--- |
+| **20%** (`6k` coppie) | `25` epoche, **3 seed (`0, 1, 2`)** | **`0.7626 ± 0.0300`** *(best `0.8046`)* | `cache_seconds = 8.83 s` (unica), train medio `49.1 s`, inferenza `0.161 ms/coppia`; errore residuo su `clubs` vs `spades` (`~67%–69%`) |
+| **50%** (`15k` coppie) | `25` epoche, seed `42` | **`0.8516`** *(ep. 24)* | Curva di scalabilità netta rispetto al 20% |
+| **100%** (`30k` coppie) | `15` epoche, seed `42` | **`0.9207`** *(ep. 11)* | `cache_seconds = 11.06 s`, train `182.6 s` (`~12.2 s/ep.`) |
+
+I **risultati finali sul test set** verranno eseguiti e registrati **una sola volta** sui tre subset **`20% / 50% / 100%`** con `--evaluate-test` dopo aver concordato la configurazione definitiva con l'Approccio A.

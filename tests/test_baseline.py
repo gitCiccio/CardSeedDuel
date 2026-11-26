@@ -1,5 +1,6 @@
 """Behavioral and unit tests for shared encoders, SuitNet, BaselineDuelNet, cache, metrics and trainer."""
 
+import importlib.util
 import tempfile
 import unittest
 from pathlib import Path
@@ -20,9 +21,12 @@ from card_suit_duel.models import (
     CardTensorCache,
     SuitClassifier,
     SuitNet,
+    aggregate_metric_runs,
+    build_pair_suit_lookup,
     collect_hardware_info,
     compute_classification_metrics,
     compute_confusion_matrix,
+    compute_suit_pair_accuracy,
     count_trainable_parameters,
     evaluate_baseline,
     fit_baseline,
@@ -88,7 +92,7 @@ class ArchitectureTests(unittest.TestCase):
 
 
 class MetricsAndHardwareTests(unittest.TestCase):
-    """Verify accuracy, macro-F1, confusion matrix and hardware metadata."""
+    """Verify accuracy, macro-F1, suit-pair diagnostics, aggregation and hardware metadata."""
 
     def test_perfect_predictions_yield_unit_accuracy_and_macro_f1(self):
         targets = [0, 1, 2, 0, 1, 2]
@@ -112,6 +116,30 @@ class MetricsAndHardwareTests(unittest.TestCase):
         self.assertAlmostEqual(metrics["per_class"]["p2_win"]["f1"], 0.8)
         self.assertAlmostEqual(metrics["per_class"]["draw"]["f1"], 2.0 / 3.0)
 
+    def test_suit_pair_accuracy_reports_all_nine_combinations(self):
+        preds = [0, 1, 2, 0]
+        targets = [0, 0, 2, 0]
+        suit_pairs = [
+            ("hearts", "clubs"),
+            ("clubs", "spades"),
+            ("spades", "spades"),
+            ("hearts", "clubs"),
+        ]
+        diag = compute_suit_pair_accuracy(preds, targets, suit_pairs)
+        self.assertEqual(len(diag), 9)
+        self.assertAlmostEqual(diag["hearts_vs_clubs"]["accuracy"], 1.0)
+        self.assertEqual(diag["hearts_vs_clubs"]["support"], 2)
+        self.assertAlmostEqual(diag["clubs_vs_spades"]["accuracy"], 0.0)
+        self.assertAlmostEqual(diag["spades_vs_spades"]["accuracy"], 1.0)
+
+    def test_aggregate_metric_runs_computes_mean_std_min_max(self):
+        agg = aggregate_metric_runs([0.6, 0.8, 1.0])
+        self.assertEqual(agg["count"], 3)
+        self.assertAlmostEqual(agg["mean"], 0.8)
+        self.assertAlmostEqual(agg["min"], 0.6)
+        self.assertAlmostEqual(agg["max"], 1.0)
+        self.assertGreater(agg["std"], 0.0)
+
     def test_rejects_invalid_metric_inputs(self):
         with self.assertRaises(CardSuitDuelError):
             compute_confusion_matrix([], [])
@@ -119,6 +147,8 @@ class MetricsAndHardwareTests(unittest.TestCase):
             compute_confusion_matrix([0, 1], [0])
         with self.assertRaises(CardSuitDuelError):
             compute_confusion_matrix([3], [0])
+        with self.assertRaises(CardSuitDuelError):
+            aggregate_metric_runs([])
 
     def test_collect_hardware_info_reports_required_keys(self):
         info = collect_hardware_info("cpu")
@@ -170,6 +200,9 @@ class CacheTests(unittest.TestCase):
                 CardPair(first_card=c1, second_card=c2, outcome=GameOutcome.P1_WIN),
                 CardPair(first_card=c2, second_card=c1, outcome=GameOutcome.P2_WIN),
             )
+            lookup = build_pair_suit_lookup(pairs)
+            self.assertEqual(lookup[pairs[0].pair_id], ("hearts", "clubs"))
+            self.assertEqual(lookup[pairs[1].pair_id], ("clubs", "hearts"))
 
             cache = CardTensorCache(root, transform=build_image_transform(image_size=(32, 32)))
             dataset = CachedCardPairDataset(pairs, root, tensor_cache=cache)
@@ -186,7 +219,6 @@ class CacheTests(unittest.TestCase):
                 self.assertEqual(dataset.cached_image_count, 2)
                 self.assertEqual(mock_load.call_count, 2)
 
-                # Subsequent reads through __getitem__ must hit RAM cache with zero disk loads.
                 item0 = dataset[0]
                 item1 = dataset[1]
                 self.assertEqual(mock_load.call_count, 2)
@@ -195,7 +227,7 @@ class CacheTests(unittest.TestCase):
 
 
 class BaselineTrainerTests(unittest.TestCase):
-    """Verify the 5-step training loop and validation checkpoint restoration."""
+    """Verify the 5-step training loop, ms_per_pair, diagnostics, early stopping and CLI defaults."""
 
     def setUp(self):
         torch.manual_seed(7)
@@ -206,19 +238,31 @@ class BaselineTrainerTests(unittest.TestCase):
         first[4:6, 2] = 1.0
         second[4:6, 2] = 1.0
         targets = torch.tensor([0, 0, 1, 1, 2, 2], dtype=torch.long)
+        pair_ids = [f"pair_{i}" for i in range(6)]
+        self.suit_lookup = {
+            "pair_0": ("hearts", "clubs"),
+            "pair_1": ("clubs", "spades"),
+            "pair_2": ("clubs", "hearts"),
+            "pair_3": ("spades", "clubs"),
+            "pair_4": ("hearts", "hearts"),
+            "pair_5": ("spades", "spades"),
+        }
 
         self.batches = [
             {
                 "first_image": first,
                 "second_image": second,
                 "target": targets,
+                "pair_id": pair_ids,
             }
         ]
 
-    def test_fit_baseline_reduces_loss_on_synthetic_batch(self):
+    def test_fit_baseline_reduces_loss_and_reports_ms_per_pair_and_suit_diagnostics(self):
         torch.manual_seed(7)
         model = BaselineDuelNet(feature_dim=32, hidden_dim=16)
-        initial_eval = evaluate_baseline(model, self.batches)
+        initial_eval = evaluate_baseline(model, self.batches, pair_suit_lookup=self.suit_lookup)
+        self.assertGreaterEqual(initial_eval["ms_per_pair"], 0.0)
+        self.assertEqual(len(initial_eval["per_suit_combination"]), 9)
 
         result = fit_baseline(
             model,
@@ -226,21 +270,56 @@ class BaselineTrainerTests(unittest.TestCase):
             self.batches,
             epochs=8,
             lr=1e-2,
+            valid_pair_suit_lookup=self.suit_lookup,
         )
-        final_eval = evaluate_baseline(model, self.batches)
+        final_eval = evaluate_baseline(model, self.batches, pair_suit_lookup=self.suit_lookup)
 
-        self.assertEqual(len(result["history"]), 8)
+        self.assertEqual(result["epochs_completed"], 8)
+        self.assertFalse(result["stopped_early"])
         self.assertLess(final_eval["loss"], initial_eval["loss"])
         self.assertGreaterEqual(final_eval["macro_f1"], initial_eval["macro_f1"])
         self.assertIsNotNone(result["best_state_dict"])
+        self.assertEqual(len(result["best_valid_metrics"]["per_suit_combination"]), 9)
 
-    def test_trainer_rejects_empty_loader(self):
+    def test_fit_baseline_supports_optional_early_stopping(self):
+        torch.manual_seed(7)
+        model = BaselineDuelNet(feature_dim=16, hidden_dim=8)
+        result = fit_baseline(
+            model,
+            self.batches,
+            self.batches,
+            epochs=20,
+            lr=1e-9,
+            patience=2,
+        )
+        self.assertTrue(result["stopped_early"])
+        self.assertLess(result["epochs_completed"], 20)
+
+    def test_trainer_rejects_invalid_arguments(self):
         model = BaselineDuelNet(feature_dim=16, hidden_dim=8)
         optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
         with self.assertRaises(CardSuitDuelError):
             train_one_epoch(model, [], optimizer)
         with self.assertRaises(CardSuitDuelError):
             evaluate_baseline(model, [])
+        with self.assertRaises(CardSuitDuelError):
+            fit_baseline(model, self.batches, self.batches, epochs=5, patience=0)
+
+    def test_cli_defaults_keep_evaluate_test_disabled_and_parse_multi_seeds(self):
+        script_path = Path(__file__).resolve().parent.parent / "scripts" / "train_baseline.py"
+        spec = importlib.util.spec_from_file_location("train_baseline_cli", script_path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+
+        default_args = module._parse_args([])
+        self.assertFalse(default_args.evaluate_test)
+        self.assertIsNone(default_args.patience)
+        self.assertIsNone(default_args.seeds)
+
+        multi_args = module._parse_args(["--seeds", "0", "1", "2", "--patience", "10"])
+        self.assertEqual(multi_args.seeds, [0, 1, 2])
+        self.assertEqual(multi_args.patience, 10)
+        self.assertFalse(multi_args.evaluate_test)
 
 
 if __name__ == "__main__":

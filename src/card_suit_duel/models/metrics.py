@@ -1,5 +1,6 @@
-"""Evaluation metrics, hardware reporting and parameter counting for duel models."""
+"""Evaluation metrics, suit-pair diagnostics, multi-seed aggregation and hardware reporting."""
 
+import math
 import os
 import platform
 from collections.abc import Sequence
@@ -8,7 +9,7 @@ from typing import Any
 import torch
 from torch import Tensor, nn
 
-from card_suit_duel.data.mapping.mappings import OUTCOME_DOMAIN
+from card_suit_duel.data.mapping.mappings import OUTCOME_DOMAIN, SUIT_DOMAIN
 from card_suit_duel.exceptions import CardSuitDuelError
 
 
@@ -141,4 +142,62 @@ def compute_classification_metrics(
         "macro_f1": sum(f1_scores) / num_classes,
         "per_class": per_class,
         "confusion_matrix": matrix,
+    }
+
+
+def compute_suit_pair_accuracy(
+    predictions: Sequence[int] | Tensor,
+    targets: Sequence[int] | Tensor,
+    suit_pairs: Sequence[tuple[str, str]],
+    *,
+    num_classes: int = len(OUTCOME_DOMAIN),
+) -> dict[str, dict[str, float | int]]:
+    """Compute diagnostic outcome accuracy broken down by the 9 ordered suit pairs.
+
+    Suit labels are used strictly for post-hoc error analysis (e.g. spotting
+    clubs-vs-spades confusion), never as model inputs or training targets.
+    """
+    pred_list = _to_index_list(predictions, name="predictions", num_classes=num_classes)
+    target_list = _to_index_list(targets, name="targets", num_classes=num_classes)
+    if len(pred_list) != len(target_list) or len(pred_list) != len(suit_pairs):
+        raise CardSuitDuelError(
+            "predictions, targets and suit_pairs must have equal length."
+        )
+    if not pred_list:
+        raise CardSuitDuelError("Cannot compute suit-pair diagnostics on empty predictions.")
+
+    counts: dict[tuple[str, str], list[int]] = {
+        (s1, s2): [0, 0] for s1 in SUIT_DOMAIN for s2 in SUIT_DOMAIN
+    }
+    for pred_idx, target_idx, pair in zip(pred_list, target_list, suit_pairs):
+        if pair not in counts:
+            raise CardSuitDuelError(f"Unsupported suit pair for diagnostics: {pair!r}.")
+        counts[pair][1] += 1
+        if pred_idx == target_idx:
+            counts[pair][0] += 1
+
+    return {
+        f"{s1}_vs_{s2}": {
+            "correct": correct,
+            "support": support,
+            "accuracy": (correct / support) if support > 0 else 0.0,
+        }
+        for (s1, s2), (correct, support) in counts.items()
+    }
+
+
+def aggregate_metric_runs(values: Sequence[float]) -> dict[str, float | int]:
+    """Compute mean, population std, min and max across multi-seed runs."""
+    if not values:
+        raise CardSuitDuelError("Cannot aggregate an empty sequence of metric values.")
+    floats = [float(v) for v in values]
+    n = len(floats)
+    mean = sum(floats) / n
+    variance = sum((x - mean) ** 2 for x in floats) / n
+    return {
+        "count": n,
+        "mean": mean,
+        "std": math.sqrt(variance),
+        "min": min(floats),
+        "max": max(floats),
     }
