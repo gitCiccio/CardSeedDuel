@@ -178,6 +178,7 @@ def main(argv: list[str] | None = None) -> int:
             "lr": args.lr,
             "seed": args.seed,
             "epochs": args.epochs,
+            "epochs_completed": fit_result["epochs_completed"],
             "engine": "ExactEngine",
             "checkpoint_dir": str(checkpoint_dir),
             "resumed_from": str(args.resume_from) if args.resume_from is not None else None,
@@ -192,6 +193,11 @@ def main(argv: list[str] | None = None) -> int:
             "best_epoch": fit_result["best_epoch"],
             "best_valid_macro_f1": fit_result["best_valid_macro_f1"],
             "best_valid_loss": fit_result["best_valid_loss"],
+            "best_valid_accuracy": fit_result["best_valid_metrics"]["accuracy"],
+            "best_valid_ms_per_pair": fit_result["best_valid_metrics"]["ms_per_pair"],
+            "best_valid_per_suit_combination": fit_result["best_valid_metrics"].get(
+                "per_suit_combination"
+            ),
             "total_training_seconds": fit_result["total_training_seconds"],
             "trainable_parameters": fit_result["trainable_parameters"],
             "history": fit_result["history"],

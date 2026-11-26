@@ -158,7 +158,7 @@ DeepProbLog all'import avvisa che `ApproximateEngine` non è disponibile perché
 Ogni run scrive in `results/runs/deepproblog/<timestamp>_p<perc>_<id>/` (cartella ignorata da git):
 - `best_model.pt`: pesi di `SuitNet` al checkpoint migliore, aggiornato durante il training ogni volta che la validazione migliora;
 - `checkpoints/epoch_NNN.pt`: checkpoint completo scritto a fine di ogni epoca (pesi, stato di Adam, stato dei generatori casuali, `history` e migliore finora), salvato in modo atomico;
-- `summary.json`: stessi campi della baseline (`hardware`, `cache_seconds`, `cache_details`, `best_epoch`, `best_valid_macro_f1`, `total_training_seconds`, `trainable_parameters`, `history`, `test`) più `engine`, `checkpoint_dir`, `resumed_from`, `valid_suit_diagnostics` e `test_suit_diagnostics`.
+- `summary.json`: stessi campi della baseline (`hardware`, `cache_seconds`, `cache_details`, `epochs_completed`, `best_epoch`, `best_valid_macro_f1`, `best_valid_accuracy`, `best_valid_ms_per_pair`, `best_valid_per_suit_combination`, `total_training_seconds`, `trainable_parameters`, `history`, `test`; ogni valutazione include `ms_per_pair` e `per_suit_combination` sulle 9 combinazioni di semi) più `engine`, `checkpoint_dir`, `resumed_from`, `valid_suit_diagnostics` e `test_suit_diagnostics`.
 
 ### Ripresa di una run interrotta
 Si riparte dall'ultimo checkpoint, ripassando **gli stessi flag** della run originale e il numero totale di epoche desiderato; la run continua nella stessa cartella:

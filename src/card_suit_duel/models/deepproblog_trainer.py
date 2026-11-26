@@ -16,10 +16,11 @@ from card_suit_duel.data.mapping.mappings import SUIT_DOMAIN, outcome_to_index, 
 from card_suit_duel.data.mapping.schema import CardImage
 from card_suit_duel.exceptions import CardSuitDuelError
 from card_suit_duel.logic import SUIT_NETWORK_NAME
-from card_suit_duel.models.baseline_trainer import CardTensorCache
+from card_suit_duel.models.baseline_trainer import CardTensorCache, build_pair_suit_lookup
 from card_suit_duel.models.deepproblog_adapter import DuelQueries
 from card_suit_duel.models.metrics import (
     compute_classification_metrics,
+    compute_suit_pair_accuracy,
     count_trainable_parameters,
 )
 
@@ -108,7 +109,11 @@ def evaluate_deepproblog(
     batch_size: int = 256,
     max_batches: int | None = None,
 ) -> dict[str, Any]:
-    """Predict argmax_O P(duel(A, B, O)) for every pair and compute outcome metrics."""
+    """Predict argmax_O P(duel(A, B, O)) for every pair and compute outcome metrics.
+
+    Like evaluate_baseline, also reports ms_per_pair and post-hoc accuracy across
+    the 9 ordered suit pairs (suit labels are never used for training).
+    """
     _require_positive_int(batch_size, name="batch_size")
     _require_optional_limit(max_batches, name="max_batches")
 
@@ -137,12 +142,23 @@ def evaluate_deepproblog(
         raise CardSuitDuelError("Evaluation dataset produced no batches.")
 
     metrics = compute_classification_metrics(predictions, targets)
-    return {
+    result: dict[str, Any] = {
         "loss": total_loss / len(targets),
         "batch_count": batch_count,
         "elapsed_seconds": elapsed,
+        "ms_per_pair": (elapsed * 1000.0) / len(targets),
         **metrics,
     }
+    # Batches iterate in dataset order, so the first len(targets) pairs were evaluated.
+    evaluated_pairs = dataset.pairs[:len(targets)]
+    suit_lookup = build_pair_suit_lookup(evaluated_pairs)
+    if all(pair.pair_id in suit_lookup for pair in evaluated_pairs):
+        result["per_suit_combination"] = compute_suit_pair_accuracy(
+            predictions,
+            targets,
+            [suit_lookup[pair.pair_id] for pair in evaluated_pairs],
+        )
+    return result
 
 
 def evaluate_suit_predictions(
@@ -314,11 +330,19 @@ def fit_deepproblog(
     if best_state_dict is not None:
         network.load_state_dict(best_state_dict)
 
+    # Read from history so runs resumed from older checkpoints report it too.
+    best_valid_metrics = next(
+        (entry["valid"] for entry in history if entry["epoch"] == best_epoch),
+        None,
+    )
+
     return {
         "epochs": epochs,
+        "epochs_completed": len(history),
         "best_epoch": best_epoch,
         "best_valid_macro_f1": best_valid_macro_f1,
         "best_valid_loss": best_valid_loss,
+        "best_valid_metrics": best_valid_metrics,
         "total_training_seconds": total_train_seconds,
         "trainable_parameters": count_trainable_parameters(network),
         "history": history,

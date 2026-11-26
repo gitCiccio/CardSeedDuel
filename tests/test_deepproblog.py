@@ -8,38 +8,46 @@ import warnings
 from pathlib import Path
 from types import SimpleNamespace
 
-import torch
-from PIL import Image
-from torch import nn
+try:
+    import torch
+    from PIL import Image
+    from torch import nn
 
-with warnings.catch_warnings():
-    # ApproximateEngine needs PySwip; only ExactEngine is used in this project.
-    warnings.simplefilter("ignore", UserWarning)
-    from problog import get_evaluatable
-    from problog.program import PrologString
+    with warnings.catch_warnings():
+        # ApproximateEngine needs PySwip; only ExactEngine is used in this project.
+        warnings.simplefilter("ignore", UserWarning)
+        from problog import get_evaluatable
+        from problog.program import PrologString
+        import deepproblog  # noqa: F401
+except ImportError:
+    torch = None
 
 from card_suit_duel.data.mapping.definitions import SUIT_CLASSES, CardSuit, DatasetSplit
 from card_suit_duel.data.mapping.mappings import outcome_to_index
 from card_suit_duel.data.mapping.schema import CardImage
 from card_suit_duel.data.pairs.schema import CardPair
-from card_suit_duel.data.preprocessing import build_image_transform
 from card_suit_duel.exceptions import CardSuitDuelError
 from card_suit_duel.game.oracle import determine_outcome
-from card_suit_duel.logic import PROGRAM_PATH, SUIT_NETWORK_NAME
-from card_suit_duel.models import CardTensorCache, SuitNet
-from card_suit_duel.models.deepproblog_adapter import (
-    DuelQueries,
-    build_deepproblog_model,
-    register_split,
-)
-from card_suit_duel.models.deepproblog_trainer import (
-    checkpoint_path,
-    evaluate_deepproblog,
-    evaluate_suit_predictions,
-    fit_deepproblog,
-    load_checkpoint,
-    suit_network,
-)
+
+if torch is not None:
+    from card_suit_duel.data.preprocessing import build_image_transform
+    from card_suit_duel.logic import PROGRAM_PATH, SUIT_NETWORK_NAME
+    from card_suit_duel.models import CardTensorCache, SuitNet
+    from card_suit_duel.models.deepproblog_adapter import (
+        DuelQueries,
+        build_deepproblog_model,
+        register_split,
+    )
+    from card_suit_duel.models.deepproblog_trainer import (
+        checkpoint_path,
+        evaluate_deepproblog,
+        evaluate_suit_predictions,
+        fit_deepproblog,
+        load_checkpoint,
+        suit_network,
+    )
+
+_SKIP_REASON = "Install the neurosymbolic extra to test Approach A (DeepProbLog)"
 
 _SUIT_COLORS = {
     CardSuit.HEARTS: (255, 0, 0),
@@ -91,6 +99,7 @@ def _all_suit_pairs(cards: dict[CardSuit, tuple[CardImage, CardImage]]) -> tuple
     )
 
 
+@unittest.skipIf(torch is None, _SKIP_REASON)
 class SymbolicRuleTests(unittest.TestCase):
     """The ProbLog rules must agree with the deterministic oracle."""
 
@@ -107,6 +116,7 @@ class SymbolicRuleTests(unittest.TestCase):
                 self.assertEqual(true_outcomes, {determine_outcome(first, second).value})
 
 
+@unittest.skipIf(torch is None, _SKIP_REASON)
 class DeepProbLogAdapterTests(unittest.TestCase):
     """Verify query construction, tensor sources and exact inference."""
 
@@ -178,7 +188,13 @@ class DeepProbLogAdapterTests(unittest.TestCase):
         final = evaluate_deepproblog(model, dataset)
 
         self.assertEqual(len(result["history"]), 15)
+        self.assertEqual(result["epochs_completed"], 15)
         self.assertLess(final["loss"], initial["loss"])
+        self.assertGreaterEqual(initial["ms_per_pair"], 0.0)
+        self.assertEqual(len(initial["per_suit_combination"]), 9)
+        self.assertTrue(all(v["support"] == 1 for v in final["per_suit_combination"].values()))
+        self.assertEqual(result["best_valid_metrics"]["macro_f1"], result["best_valid_macro_f1"])
+        self.assertEqual(len(result["best_valid_metrics"]["per_suit_combination"]), 9)
         self.assertIsNotNone(result["best_state_dict"])
         self.assertEqual(result["trainable_parameters"], sum(p.numel() for p in SuitNet().parameters()))
 
@@ -231,18 +247,21 @@ class DeepProbLogAdapterTests(unittest.TestCase):
             )
 
 
-class _ColorToSuit(nn.Module):
-    """Map red/green/blue images to one-hot suits, rotated by `shift` positions."""
+if torch is not None:
 
-    def __init__(self, shift: int) -> None:
-        super().__init__()
-        self.shift = shift
+    class _ColorToSuit(nn.Module):
+        """Map red/green/blue images to one-hot suits, rotated by `shift` positions."""
 
-    def forward(self, images: torch.Tensor) -> torch.Tensor:
-        channel = images.mean(dim=(2, 3)).argmax(dim=1)
-        return nn.functional.one_hot((channel + self.shift) % 3, num_classes=3).float()
+        def __init__(self, shift: int) -> None:
+            super().__init__()
+            self.shift = shift
+
+        def forward(self, images: torch.Tensor) -> torch.Tensor:
+            channel = images.mean(dim=(2, 3)).argmax(dim=1)
+            return nn.functional.one_hot((channel + self.shift) % 3, num_classes=3).float()
 
 
+@unittest.skipIf(torch is None, _SKIP_REASON)
 class SuitDiagnosticsTests(unittest.TestCase):
     """Suit accuracy must be reported both directly and up to the rules' cyclic symmetry."""
 
