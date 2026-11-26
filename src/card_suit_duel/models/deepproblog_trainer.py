@@ -97,6 +97,7 @@ def train_one_epoch_deepproblog(
 
     return {
         "loss": total_loss / query_count,
+        "sample_count": query_count,
         "batch_count": batch_count,
         "elapsed_seconds": elapsed,
     }

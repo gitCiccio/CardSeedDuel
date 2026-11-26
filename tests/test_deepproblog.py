@@ -189,6 +189,7 @@ class DeepProbLogAdapterTests(unittest.TestCase):
 
         self.assertEqual(len(result["history"]), 15)
         self.assertEqual(result["epochs_completed"], 15)
+        self.assertEqual(result["history"][0]["train"]["sample_count"], len(dataset))
         self.assertLess(final["loss"], initial["loss"])
         self.assertGreaterEqual(initial["ms_per_pair"], 0.0)
         self.assertEqual(len(initial["per_suit_combination"]), 9)
